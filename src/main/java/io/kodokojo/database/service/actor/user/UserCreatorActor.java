@@ -34,8 +34,8 @@ import io.kodokojo.database.service.actor.entity.EntityCreatorActor;
 import io.kodokojo.database.service.actor.entity.EntityMessage;
 import io.kodokojo.commons.service.EmailSender;
 import io.kodokojo.commons.service.actor.EmailSenderActor;
-import io.kodokojo.commons.service.actor.message.EventReplyMessage;
-import io.kodokojo.commons.service.actor.message.EventRequestMessage;
+import io.kodokojo.commons.service.actor.message.EventUserReplyMessage;
+import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 import io.kodokojo.commons.service.repository.UserRepository;
 import org.apache.commons.lang.StringUtils;
 
@@ -72,14 +72,14 @@ public class UserCreatorActor extends AbstractActor {
 
     private String entityId;
 
-    private EventCreateMsg message;
+    private EventUserCreateMsg message;
 
     private ActorRef originalActor;
 
     public UserCreatorActor(UserRepository userRepository, ApplicationConfig applicationConfig) {
         this.userRepository = userRepository;
         this.applicationConfig = applicationConfig;
-        receive(ReceiveBuilder.match(EventCreateMsg.class, this::onCreateUserRequest)
+        receive(ReceiveBuilder.match(EventUserCreateMsg.class, this::onCreateUserRequest)
                 .match(EntityCreatorActor.EntityCreatedResultMsg.class, this::onEntityCreated)
                 .match(UserEligibleActor.UserEligibleResultMsg.class, this::onUserIsEligible)
                 .match(UserGenerateSecurityData.UserSecurityDataMsg.class, this::onSecurityDataGenerated)
@@ -87,7 +87,7 @@ public class UserCreatorActor extends AbstractActor {
         );
     }
 
-    private void onCreateUserRequest(EventCreateMsg u) {
+    private void onCreateUserRequest(EventUserCreateMsg u) {
         originalActor = sender();
         message = u;
         if (applicationConfig.userCreationRoutedInWaitingList() && message.getRequester() == null) {
@@ -166,7 +166,7 @@ public class UserCreatorActor extends AbstractActor {
         }
     }
 
-    public static class EventCreateMsg extends EventRequestMessage {
+    public static class EventUserCreateMsg extends EventUserRequestMessage {
 
         protected final String id;
 
@@ -176,7 +176,13 @@ public class UserCreatorActor extends AbstractActor {
 
         protected final String entityId;
 
-        public EventCreateMsg(User requester, Event request, String id, String email, String username, String entityId) {
+        private final boolean comeFromEventBus;
+
+        public EventUserCreateMsg(User requester, Event request, String id, String email, String username, String entityId) {
+            this(requester, request, id, email, username, entityId, false);
+        }
+
+        public EventUserCreateMsg(User requester, Event request, String id, String email, String username, String entityId, boolean comeFromEventBus) {
             super(requester,request);
             if (isBlank(id)) {
                 throw new IllegalArgumentException("id must be defined.");
@@ -192,6 +198,12 @@ public class UserCreatorActor extends AbstractActor {
             this.email = email;
             this.username = username;
             this.entityId = entityId;
+            this.comeFromEventBus = comeFromEventBus;
+        }
+
+        @Override
+        public boolean initialSenderIsEventBus() {
+            return comeFromEventBus;
         }
 
         public String getId() {
@@ -211,7 +223,7 @@ public class UserCreatorActor extends AbstractActor {
         }
     }
 
-    public static class UserCreateResultMsg extends EventReplyMessage {
+    public static class UserCreateResultMsg extends EventUserReplyMessage {
 
         private final User user;
 
@@ -235,7 +247,7 @@ public class UserCreatorActor extends AbstractActor {
         }
     }
 
-    public static class UserInWaitinglistResultMsg extends EventReplyMessage{
+    public static class UserInWaitinglistResultMsg extends EventUserReplyMessage {
 
         private final UserInWaitingList userInWaitingList;
 

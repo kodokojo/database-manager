@@ -27,7 +27,9 @@ import io.kodokojo.commons.model.Project;
 import io.kodokojo.commons.model.ProjectBuilder;
 import io.kodokojo.commons.model.ProjectConfiguration;
 import io.kodokojo.commons.model.User;
-import io.kodokojo.commons.service.actor.message.EventRequestMessage;
+import io.kodokojo.commons.service.actor.message.EventReplyableMessage;
+import io.kodokojo.commons.service.actor.message.EventUserReplyMessage;
+import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 import io.kodokojo.commons.service.actor.right.RightEndpointActor;
 import io.kodokojo.commons.service.repository.ProjectRepository;
 
@@ -60,7 +62,7 @@ public class ProjectCreatorActor extends AbstractActor {
     }
 
     private void onRightResult(RightEndpointActor.RightRequestResultMsg msg) {
-        EventRequestMessage result = null;
+        EventUserRequestMessage result = null;
         if (msg.isValid()) {
             String projectId = projectRepository.addProject(originalMsg.project, originalMsg.projectConfigurationIdentifier);
             ProjectBuilder builder = new ProjectBuilder(originalMsg.project);
@@ -87,18 +89,23 @@ public class ProjectCreatorActor extends AbstractActor {
                 LOGGER.debug("Add project '{}' from unknown requester.", msg.project.getName());
                 LOGGER.debug("Add project {}", msg.project);
             }
-            projectRepository.addProject(originalMsg.project, originalMsg.projectConfigurationIdentifier);
+            String projectId = projectRepository.addProject(originalMsg.project, originalMsg.projectConfigurationIdentifier);
+            ProjectBuilder projectBuilder = new ProjectBuilder(originalMsg.project);
+            projectBuilder.setIdentifier(projectId);
+            originalSender.tell(new ProjectCreateResultMsg(msg.getRequester(), msg.originalEvent(), projectBuilder.build()), self());
             getContext().stop(self());
         }
     }
 
-    public static class ProjectCreateMsg extends EventRequestMessage {
+    public static class ProjectCreateMsg extends EventUserRequestMessage {
 
         private final Project project;
 
         private final String projectConfigurationIdentifier;
 
-        public ProjectCreateMsg(User requester, Event request, Project project, String projectConfigurationIdentifier) {
+        private final boolean isEventBusOrigin;
+
+        public ProjectCreateMsg(User requester, Event request, Project project, String projectConfigurationIdentifier , boolean isEventBusOrigin) {
             super(requester, request);
             if (project == null) {
                 throw new IllegalArgumentException("project must be defined.");
@@ -108,15 +115,24 @@ public class ProjectCreatorActor extends AbstractActor {
             }
             this.project = project;
             this.projectConfigurationIdentifier = projectConfigurationIdentifier;
+            this.isEventBusOrigin = isEventBusOrigin;
+        }
+        public ProjectCreateMsg(User requester, Event request, Project project, String projectConfigurationIdentifier) {
+            this(requester, request, project, projectConfigurationIdentifier, false);
+        }
+
+        @Override
+        public boolean initialSenderIsEventBus() {
+            return isEventBusOrigin;
         }
     }
 
-    public static class ProjectCreateResultMsg extends EventRequestMessage {
+    public static class ProjectCreateResultMsg extends EventUserReplyMessage {
 
         private final Project project;
 
         public ProjectCreateResultMsg(User requester,Event request, Project project) {
-            super(requester, request);
+            super(requester, request,Event.PROJECT_CREATION_REPLY, project);
             if (project == null) {
                 throw new IllegalArgumentException("project must be defined.");
             }
@@ -128,7 +144,7 @@ public class ProjectCreatorActor extends AbstractActor {
         }
     }
 
-    public static class ProjectCreateNotAuthoriseMsg extends EventRequestMessage {
+    public static class ProjectCreateNotAuthoriseMsg extends EventUserRequestMessage {
 
         private final Project project;
 

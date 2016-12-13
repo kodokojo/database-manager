@@ -57,9 +57,21 @@ public class UserGenerateIdentifierActor extends AbstractActor {
 
         private final Event request;
 
+        private final boolean comeFromEventBus;
+
         public UserGenerateIdentifierMsg(Event request) {
+            this(request, false);
+        }
+
+        public UserGenerateIdentifierMsg(Event request, boolean comeFromEventBus) {
             requireNonNull(request, "request must be defined.");
             this.request = request;
+            this.comeFromEventBus = comeFromEventBus;
+        }
+
+        @Override
+        public boolean initialSenderIsEventBus() {
+            return comeFromEventBus;
         }
 
         @Override

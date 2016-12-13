@@ -64,12 +64,12 @@ public class UserUpdaterActorTest implements DataBuilder {
         //actorSystem.actorOf(Props.create())
 
         // when
-        Future<Object> future = ask(subject, new UserMessage.UserUpdateMessage(requester, null, requester, "newPassword", "newwSSH", "Marcel", "Dupond", "marcel@dupond.com"), Timeout.apply(1, TimeUnit.SECONDS));
+        Future<Object> future = ask(subject, new UserMessage.UserUpdateMessageUser(requester, null, requester, "newPassword", "newwSSH", "Marcel", "Dupond", "marcel@dupond.com"), Timeout.apply(1, TimeUnit.SECONDS));
         try {
             Object result = Await.result(future, Duration.create(1, TimeUnit.SECONDS));
             assertThat(result).isNotNull();
-            assertThat(result.getClass()).isEqualTo(UserMessage.UserUpdateMessageResult.class);
-            UserMessage.UserUpdateMessageResult msgResult = (UserMessage.UserUpdateMessageResult) result;
+            assertThat(result.getClass()).isEqualTo(UserMessage.UserUpdateMessageResultUser.class);
+            UserMessage.UserUpdateMessageResultUser msgResult = (UserMessage.UserUpdateMessageResultUser) result;
             assertThat(msgResult.isSuccess()).isTrue();
         } catch (Exception e) {
             fail(e.getMessage());

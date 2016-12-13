@@ -19,18 +19,18 @@ package io.kodokojo.database.service.actor.user;
 
 import io.kodokojo.commons.event.Event;
 import io.kodokojo.commons.model.User;
-import io.kodokojo.commons.service.actor.message.EventReplyMessage;
-import io.kodokojo.commons.service.actor.message.EventRequestMessage;
+import io.kodokojo.commons.service.actor.message.EventUserReplyMessage;
+import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 
 import static java.util.Objects.requireNonNull;
 
 public interface UserMessage {
 
-    class UserUpdateMessageResult extends EventReplyMessage {
+    class UserUpdateMessageResultUser extends EventUserReplyMessage {
 
         private final boolean success;
 
-        public UserUpdateMessageResult(User requester, Event request, boolean success) {
+        public UserUpdateMessageResultUser(User requester, Event request, boolean success) {
             super(requester , request, Event.USER_UPDATE_REPLY, success);
             this.success = success;
         }
@@ -40,7 +40,7 @@ public interface UserMessage {
         }
     }
 
-    class UserUpdateMessage extends EventRequestMessage {
+    class UserUpdateMessageUser extends EventUserRequestMessage {
 
         private final User userToUpdate;
 
@@ -54,7 +54,12 @@ public interface UserMessage {
 
         private final String lastName;
 
-        public UserUpdateMessage(User requester, Event request, User userToUpdate, String newPassword, String newSSHPublicKey, String firstName, String lastName, String email) {
+        private final boolean comeFromEventBus;
+
+        public UserUpdateMessageUser(User requester, Event request, User userToUpdate, String newPassword, String newSSHPublicKey, String firstName, String lastName, String email) {
+            this(requester, request, userToUpdate, newPassword, newSSHPublicKey, firstName, lastName, email, false);
+        }
+        public UserUpdateMessageUser(User requester, Event request, User userToUpdate, String newPassword, String newSSHPublicKey, String firstName, String lastName, String email, boolean comeFromEventBus) {
             super(requester, request);
             requireNonNull(userToUpdate, "userToUpdate must be defined.");
             this.userToUpdate = userToUpdate;
@@ -63,6 +68,12 @@ public interface UserMessage {
             this.firstName = firstName;
             this.lastName = lastName;
             this.email = email;
+            this.comeFromEventBus = comeFromEventBus;
+        }
+
+        @Override
+        public boolean initialSenderIsEventBus() {
+            return comeFromEventBus;
         }
 
         public User getUserToUpdate() {

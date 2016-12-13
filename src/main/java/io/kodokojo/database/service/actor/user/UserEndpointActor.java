@@ -42,13 +42,13 @@ public class UserEndpointActor extends AbstractActor {
     public UserEndpointActor(UserRepository userRepository, ApplicationConfig applicationConfig) {
 
         receive(ReceiveBuilder.match(UserGenerateIdentifierActor.UserGenerateIdentifierMsg.class,
-                msg -> getContext().actorOf(UserGenerateIdentifierActor.PROPS(userRepository)).forward(msg, getContext())).match(UserCreatorActor.EventCreateMsg.class, msg -> {
+                msg -> getContext().actorOf(UserGenerateIdentifierActor.PROPS(userRepository)).forward(msg, getContext())).match(UserCreatorActor.EventUserCreateMsg.class, msg -> {
             getContext().actorOf(UserCreatorActor.PROPS(userRepository, applicationConfig)).forward(msg, getContext());
         }).match(UserFetcherActor.UserFetchMsg.class, msg -> {
             getContext().actorOf(UserFetcherActor.PROPS(userRepository)).forward(msg, getContext());
         }).match(UserServiceCreatorActor.UserServiceCreateMsg.class, msg -> {
             getContext().actorOf(UserServiceCreatorActor.PROPS(userRepository)).forward(msg, getContext());
-        }).match(UserMessage.UserUpdateMessage.class, msg -> {
+        }).match(UserMessage.UserUpdateMessageUser.class, msg -> {
             getContext().actorOf(UserUpdaterActor.PROPS(userRepository)).forward(msg, getContext());
         }).matchAny(this::unhandled)
                 .build());

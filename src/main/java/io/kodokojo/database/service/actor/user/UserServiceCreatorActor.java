@@ -25,7 +25,7 @@ import akka.japi.pf.ReceiveBuilder;
 import io.kodokojo.commons.event.Event;
 import io.kodokojo.commons.model.User;
 import io.kodokojo.commons.model.UserService;
-import io.kodokojo.commons.service.actor.message.EventRequestMessage;
+import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 import io.kodokojo.commons.service.repository.UserRepository;
 import org.apache.commons.lang.StringUtils;
 
@@ -108,7 +108,7 @@ public class UserServiceCreatorActor extends AbstractActor {
         }
     }
 
-    public static class UserServiceCreateMsg extends EventRequestMessage {
+    public static class UserServiceCreateMsg extends EventUserRequestMessage {
 
         protected final String username;
 
@@ -133,7 +133,7 @@ public class UserServiceCreatorActor extends AbstractActor {
         }
     }
 
-    public static class UserServiceCreateResultMsg extends EventRequestMessage {
+    public static class UserServiceCreateResultMsg extends EventUserRequestMessage {
 
         private final UserService user;
 

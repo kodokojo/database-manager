@@ -23,6 +23,8 @@ import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import io.kodokojo.commons.service.BrickFactory;
 import io.kodokojo.commons.service.repository.ProjectRepository;
+import io.kodokojo.database.service.BootstrapConfigurationProvider;
+import io.kodokojo.database.service.ConfigurationStore;
 
 import static akka.event.Logging.getLogger;
 import static java.util.Objects.requireNonNull;
@@ -31,21 +33,24 @@ public class ProjectEndpointActor extends AbstractActor {
 
     private final LoggingAdapter LOGGER = getLogger(getContext().system(), this);
 
-    public static Props PROPS(ProjectRepository projectRepository, BrickFactory brickFactory) {
+    public static Props PROPS(ProjectRepository projectRepository,
+                              BrickFactory brickFactory,
+                              BootstrapConfigurationProvider bootstrapConfigurationProvider,
+                              ConfigurationStore configurationStore) {
         requireNonNull(projectRepository, "projectRepository must be defined.");
         requireNonNull(brickFactory, "brickFactory must be defined.");
-        return Props.create(ProjectEndpointActor.class, projectRepository, brickFactory);
+        requireNonNull(configurationStore, "configurationStore must be defined.");
+        requireNonNull(bootstrapConfigurationProvider, "bootstrapConfigurationProvider must be defined.");
+
+        return Props.create(ProjectEndpointActor.class, projectRepository, brickFactory, bootstrapConfigurationProvider, configurationStore);
     }
 
     public static final String NAME = "projectEndpointProps";
 
-    public ProjectEndpointActor(ProjectRepository projectRepository, BrickFactory brickFactory) {
-        if (projectRepository == null) {
-            throw new IllegalArgumentException("projectRepository must be defined.");
-        }
-        if (brickFactory == null) {
-            throw new IllegalArgumentException("brickFactory must be defined.");
-        }
+    public ProjectEndpointActor(ProjectRepository projectRepository,
+                                BrickFactory brickFactory,
+                                BootstrapConfigurationProvider bootstrapConfigurationProvider,
+                                ConfigurationStore configurationStore) {
 
         receive(ReceiveBuilder
                 .match(ProjectConfigurationBuilderActor.ProjectConfigurationBuildMsg.class, msg -> {
@@ -65,6 +70,8 @@ public class ProjectEndpointActor extends AbstractActor {
                     getContext().actorOf(ProjectCreatorActor.PROPS(projectRepository)).forward(msg, getContext());
                 }).match(ProjectConfigurationUpdaterActor.ProjectConfigurationUpdaterMsg.class, msg -> {
                     getContext().actorOf(ProjectConfigurationUpdaterActor.PROPS(projectRepository)).forward(msg, getContext());
+                }).match(BootstrapStackActor.BootstrapStackMsg.class, msg -> {
+                    getContext().actorOf(BootstrapStackActor.PROPS(bootstrapConfigurationProvider, configurationStore)).forward(msg, getContext());
                 })
                 .matchAny(this::unhandled).build());
     }

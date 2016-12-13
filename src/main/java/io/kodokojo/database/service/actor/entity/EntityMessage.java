@@ -19,12 +19,12 @@ package io.kodokojo.database.service.actor.entity;
 
 import io.kodokojo.commons.event.Event;
 import io.kodokojo.commons.model.User;
-import io.kodokojo.commons.service.actor.message.EventRequestMessage;
+import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 public interface EntityMessage {
-    class AddUserToEntityMsg extends EventRequestMessage {
+    class AddUserToEntityMsg extends EventUserRequestMessage {
 
         protected final String userId;
 

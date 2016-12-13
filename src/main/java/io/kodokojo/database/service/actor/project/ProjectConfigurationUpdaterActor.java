@@ -24,7 +24,7 @@ import akka.japi.pf.ReceiveBuilder;
 import io.kodokojo.commons.event.Event;
 import io.kodokojo.commons.model.ProjectConfiguration;
 import io.kodokojo.commons.model.User;
-import io.kodokojo.commons.service.actor.message.EventRequestMessage;
+import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 import io.kodokojo.commons.service.repository.ProjectRepository;
 
 import static akka.event.Logging.getLogger;
@@ -54,7 +54,7 @@ public class ProjectConfigurationUpdaterActor extends AbstractActor {
                 .matchAny(this::unhandled).build());
     }
 
-    public static class ProjectConfigurationUpdaterMsg extends EventRequestMessage {
+    public static class ProjectConfigurationUpdaterMsg extends EventUserRequestMessage {
 
         private final ProjectConfiguration projectConfiguration;
 
@@ -66,7 +66,7 @@ public class ProjectConfigurationUpdaterActor extends AbstractActor {
             this.projectConfiguration = projectConfiguration;
         }
     }
-    public static class ProjectConfigurationUpdaterResultMsg extends EventRequestMessage {
+    public static class ProjectConfigurationUpdaterResultMsg extends EventUserRequestMessage {
 
         private final ProjectConfiguration projectConfiguration;
 

@@ -21,13 +21,13 @@ import io.kodokojo.commons.event.Event;
 import io.kodokojo.commons.model.Project;
 import io.kodokojo.commons.model.UpdateData;
 import io.kodokojo.commons.model.User;
-import io.kodokojo.commons.service.actor.message.EventRequestMessage;
+import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 
 import static java.util.Objects.requireNonNull;
 
 public interface ProjectUpdaterMessages {
 
-    class ProjectUpdateMsg extends EventRequestMessage {
+    class ProjectUpdateMsg extends EventUserRequestMessage {
 
         final Project project;
 
@@ -40,7 +40,7 @@ public interface ProjectUpdaterMessages {
         }
     }
 
-    class ProjectUpdateResultMsg extends EventRequestMessage {
+    class ProjectUpdateResultMsg extends EventUserRequestMessage {
 
         private final Project project;
 
@@ -57,7 +57,7 @@ public interface ProjectUpdaterMessages {
         }
     }
 
-    class ProjectUpdateNotAuthoriseMsg extends EventRequestMessage {
+    class ProjectUpdateNotAuthoriseMsg extends EventUserRequestMessage {
 
         private final Project project;
 
@@ -74,7 +74,7 @@ public interface ProjectUpdaterMessages {
         }
     }
 
-    class ListAndUpdateUserToProjectMsg extends EventRequestMessage {
+    class ListAndUpdateUserToProjectMsg extends EventUserRequestMessage {
 
         private final UpdateData<User> user;
 
@@ -89,7 +89,7 @@ public interface ProjectUpdaterMessages {
         }
     }
 
-    class ListAndUpdateUserToProjectResultMsg extends EventRequestMessage {
+    class ListAndUpdateUserToProjectResultMsg extends EventUserRequestMessage {
 
         private final ListAndUpdateUserToProjectMsg request;
 

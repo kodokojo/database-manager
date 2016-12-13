@@ -25,6 +25,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.name.Named;
 import io.kodokojo.commons.config.ApplicationConfig;
+import io.kodokojo.database.service.BootstrapConfigurationProvider;
+import io.kodokojo.database.service.ConfigurationStore;
 import io.kodokojo.database.service.actor.entity.EntityEndpointActor;
 import io.kodokojo.database.service.actor.project.ProjectEndpointActor;
 import io.kodokojo.database.service.actor.user.UserEndpointActor;
@@ -53,8 +55,8 @@ public class AkkaModule extends AbstractModule {
 
     @Provides
     @Named(ProjectEndpointActor.NAME)
-    Props provideProjectEndpointProps(ProjectRepository projectRepository, BrickFactory brickFactory) {
-        return ProjectEndpointActor.PROPS(projectRepository, brickFactory);
+    Props provideProjectEndpointProps(ProjectRepository projectRepository, BrickFactory brickFactory, BootstrapConfigurationProvider bootstrapConfigurationProvider, ConfigurationStore configurationStore) {
+        return ProjectEndpointActor.PROPS(projectRepository, brickFactory, bootstrapConfigurationProvider, configurationStore);
     }
 
     @Provides

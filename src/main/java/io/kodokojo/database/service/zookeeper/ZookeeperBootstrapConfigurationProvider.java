@@ -36,6 +36,7 @@ public class ZookeeperBootstrapConfigurationProvider implements BootstrapConfigu
     public static final String KODOKOJO_TCP_PORT = "/kodokojo/tcpports";
 
     public  static final String KODOKOJO_PORT_INDEX = "/kodokojo/portIndex";
+
     public static final int INITIAL_PORT = 10022;
 
     private final ZooKeeper zooKeeper;
@@ -44,7 +45,14 @@ public class ZookeeperBootstrapConfigurationProvider implements BootstrapConfigu
         requireNonNull(zookeeperConfig, "zookeeperConfig must be defined.");
         try {
             zooKeeper = new ZooKeeper(zookeeperConfig.url(), 2000, this);
-            zooKeeper.exists(KODOKOJO_TCP_PORT, this);
+            Stat stat = zooKeeper.exists("/kodokojo", this);
+            if (stat == null) {
+                zooKeeper.create("/kodokojo",new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            }
+            stat = zooKeeper.exists(KODOKOJO_TCP_PORT, this);
+            if (stat == null) {
+                zooKeeper.create(KODOKOJO_TCP_PORT,new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            }
         } catch (IOException | InterruptedException | KeeperException e) {
             throw new RuntimeException("Unable to connect to Zookeeper on url " + zookeeperConfig.url() + ".", e);
         }
@@ -54,6 +62,10 @@ public class ZookeeperBootstrapConfigurationProvider implements BootstrapConfigu
     @Override
     public int provideTcpPortEntrypoint(String projectName, String stackName) {
         String path = KODOKOJO_TCP_PORT + "/" + projectName;
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Trying to provide a new Tcp port for project {}.", projectName);
+        }
         Try<Integer> aTry = Try.of(() -> {
             Stat stat = zooKeeper.exists(path, this);
             if (stat == null) {
@@ -62,6 +74,8 @@ public class ZookeeperBootstrapConfigurationProvider implements BootstrapConfigu
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Generate Tcp port {} on zookeeper path '{}'.", path, path);
                     }
+                }).onFailure(e -> {
+                    LOGGER.error("An error occur while trying to provide a new TCP port for project {}", projectName, e);
                 }).getOrElse(-1);
             } else {
                 byte[] data = zooKeeper.getData(path, this, stat);
@@ -69,7 +83,9 @@ public class ZookeeperBootstrapConfigurationProvider implements BootstrapConfigu
                 return res + INITIAL_PORT;
             }
         });
-        return aTry.getOrElse(-1);
+        return aTry.onFailure(e -> {
+            LOGGER.error("An error occur while trying to provide a new TCP port for project {}", projectName, e);
+        }).getOrElse(-1);
     }
 
     @Override

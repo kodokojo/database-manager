@@ -33,8 +33,7 @@ import io.kodokojo.database.service.actor.user.UserFetcherActor;
 import io.kodokojo.database.service.actor.user.UserServiceCreatorActor;
 import io.kodokojo.commons.service.BrickFactory;
 import io.kodokojo.commons.service.DefaultBrickFactory;
-import io.kodokojo.commons.service.actor.message.EventReplyMessage;
-import io.kodokojo.commons.service.actor.message.EventRequestMessage;
+import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.*;
@@ -75,6 +74,11 @@ public class ProjectConfigurationBuilderActor extends AbstractActor {
         receive(ReceiveBuilder.match(ProjectConfigurationBuildMsg.class, msg -> {
             originalSender = sender();
             initialMsg = msg;
+
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Receive a ProjectBuild request from Actor {}.", originalSender);
+            }
+
             ProjectConfigurationCreationDto projectConfigurationCreationDto = msg.getProjectConfigurationCreationDto();
 
             Set<String> userRequested = new HashSet<>();
@@ -147,12 +151,13 @@ public class ProjectConfigurationBuilderActor extends AbstractActor {
             ProjectConfiguration projectConfiguration = new ProjectConfiguration(requester.getEntityIdentifier(), projectConfigurationCreationDto.getName(), userService, new ArrayList<>(admins), stackConfiguration, new ArrayList<>(users));
             originalSender.tell(new ProjectConfigurationBuildResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(),projectConfiguration), self());
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Return a built ProjectConfiguration for project {}.", initialMsg.getProjectConfigurationCreationDto().getName());
+                LOGGER.debug("Return a built ProjectConfiguration for project {} to actor {}.", initialMsg.getProjectConfigurationCreationDto().getName(), originalSender);
                 LOGGER.debug("sshPort {}", scmSshPort);
             }
+            getContext().stop(self());
 
         } else if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Not yet ready to build Project configuration for project {}.", initialMsg.getProjectConfigurationCreationDto().getName());
+            LOGGER.debug("Not yet ready to build Project configuration for project {}. scmSshPort={} userService created {} Get admins {}.", initialMsg.getProjectConfigurationCreationDto().getName(), scmSshPort, userService == null ? "NOT EXIST" : "DEFINED", CollectionUtils.isNotEmpty(admins) ? "EMPTY" : "DEFINED");
         }
     }
 
@@ -161,16 +166,28 @@ public class ProjectConfigurationBuilderActor extends AbstractActor {
         brickConfigDtos.add(new BrickConfigDto(brickConfiguration.getName(), brickConfiguration.getType().toString(), brickConfiguration.getVersion()));
     }
 
-    public static class ProjectConfigurationBuildMsg extends EventRequestMessage {
+    public static class ProjectConfigurationBuildMsg extends EventUserRequestMessage {
 
         private final ProjectConfigurationCreationDto projectConfigurationCreationDto;
 
+        private final boolean comeFromEventBus;
+
         public ProjectConfigurationBuildMsg(User requester, Event request, ProjectConfigurationCreationDto projectConfigurationCreationDto) {
+            this(requester, request, projectConfigurationCreationDto, false);
+        }
+
+        public ProjectConfigurationBuildMsg(User requester, Event request, ProjectConfigurationCreationDto projectConfigurationCreationDto, boolean comeFromEventBus) {
             super(requester, request);
             if (projectConfigurationCreationDto == null) {
                 throw new IllegalArgumentException("projectCreationDto must be defined.");
             }
             this.projectConfigurationCreationDto = projectConfigurationCreationDto;
+            this.comeFromEventBus = comeFromEventBus;
+        }
+
+        @Override
+        public boolean initialSenderIsEventBus() {
+            return comeFromEventBus;
         }
 
         public ProjectConfigurationCreationDto getProjectConfigurationCreationDto() {
@@ -178,12 +195,12 @@ public class ProjectConfigurationBuilderActor extends AbstractActor {
         }
     }
 
-    public static class ProjectConfigurationBuildResultMsg extends EventReplyMessage {
+    public static class ProjectConfigurationBuildResultMsg extends EventUserRequestMessage {
 
         private final ProjectConfiguration projectConfiguration;
 
         public ProjectConfigurationBuildResultMsg(User requester, Event request,ProjectConfiguration projectConfiguration) {
-            super(requester, request, Event.PROJECTCONFIG_CREATION_REPLY, projectConfiguration.getIdentifier());
+            super(requester, request);
             this.projectConfiguration = projectConfiguration;
         }
 

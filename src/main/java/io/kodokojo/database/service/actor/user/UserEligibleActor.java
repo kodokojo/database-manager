@@ -40,7 +40,7 @@ public class UserEligibleActor extends AbstractActor {
     }
 
     public UserEligibleActor(UserRepository userRepository) {
-        receive(ReceiveBuilder.match(UserCreatorActor.EventCreateMsg.class, msg -> {
+        receive(ReceiveBuilder.match(UserCreatorActor.EventUserCreateMsg.class, msg -> {
             String id = msg.id;
             String username = msg.username;
             boolean res = userRepository.identifierExpectedNewUser(id);

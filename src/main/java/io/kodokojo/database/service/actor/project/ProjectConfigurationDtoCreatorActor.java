@@ -26,8 +26,9 @@ import io.kodokojo.commons.dto.ProjectConfigurationCreationDto;
 import io.kodokojo.commons.event.Event;
 import io.kodokojo.commons.model.ProjectConfiguration;
 import io.kodokojo.commons.model.User;
+import io.kodokojo.commons.service.actor.message.EventUserReplyMessage;
 import io.kodokojo.database.service.actor.EndpointActor;
-import io.kodokojo.commons.service.actor.message.EventRequestMessage;
+import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 import io.kodokojo.commons.service.repository.ProjectRepository;
 
 import static akka.event.Logging.getLogger;
@@ -58,34 +59,53 @@ public class ProjectConfigurationDtoCreatorActor extends AbstractActor {
             LOGGER.debug("Receive a projectConfiguration to add to store.");
             ProjectConfiguration projectConfiguration = msg.getProjectConfiguration();
             String projectConfigurationId = projectRepository.addProjectConfiguration(projectConfiguration);
-            originalSender.tell(new ProjectConfigurationDtoCreateResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), projectConfigurationId), self());
+            originalSender.tell(new ProjectConfigurationDtoCreateResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), projectConfigurationId, projectConfiguration.getName()), self());
         }).matchAny(this::unhandled).build());
     }
 
-    public static class ProjectConfigurationDtoCreateMsg extends EventRequestMessage {
+    public static class ProjectConfigurationDtoCreateMsg extends EventUserRequestMessage {
 
         private final ProjectConfigurationCreationDto projectConfigDto;
 
+        private final boolean initialSenderIsEventBus;
+
         public ProjectConfigurationDtoCreateMsg(User requester, Event request, ProjectConfigurationCreationDto projectConfigurationCreationDto) {
+            this(requester, request, projectConfigurationCreationDto, false);
+        }
+
+        public ProjectConfigurationDtoCreateMsg(User requester, Event request, ProjectConfigurationCreationDto projectConfigurationCreationDto, boolean initialSenderIsEventBus) {
             super(requester, request);
             if (projectConfigurationCreationDto == null) {
                 throw new IllegalArgumentException("projectCreationDto must be defined.");
             }
             this.projectConfigDto = projectConfigurationCreationDto;
+            this.initialSenderIsEventBus = initialSenderIsEventBus;
+        }
+
+        @Override
+        public boolean initialSenderIsEventBus() {
+            return initialSenderIsEventBus;
         }
     }
 
-    public static class ProjectConfigurationDtoCreateResultMsg extends EventRequestMessage {
+    public static class ProjectConfigurationDtoCreateResultMsg extends EventUserReplyMessage {
 
         private final String projectConfigurationId;
 
-        public ProjectConfigurationDtoCreateResultMsg(User requester, Event request, String projectConfigurationId) {
-            super(requester, request);
+        private final String projectName;
+
+        public ProjectConfigurationDtoCreateResultMsg(User requester, Event request, String projectConfigurationId, String projectName) {
+            super(requester, request, Event.PROJECTCONFIG_CREATION_REPLY, projectConfigurationId);
             this.projectConfigurationId = projectConfigurationId;
+            this.projectName = projectName;
         }
 
         public String getProjectConfigurationId() {
             return projectConfigurationId;
+        }
+
+        public String getProjectName() {
+            return projectName;
         }
     }
 }

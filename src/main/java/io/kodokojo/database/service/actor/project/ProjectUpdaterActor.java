@@ -23,7 +23,7 @@ import akka.actor.Props;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import io.kodokojo.commons.model.ProjectConfiguration;
-import io.kodokojo.commons.service.actor.message.EventRequestMessage;
+import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 import io.kodokojo.commons.service.actor.right.RightEndpointActor;
 import io.kodokojo.commons.service.repository.ProjectRepository;
 
@@ -57,7 +57,7 @@ public class ProjectUpdaterActor extends AbstractActor {
     }
 
     private void onRightRequestResult(RightEndpointActor.RightRequestResultMsg msg) {
-        EventRequestMessage result;
+        EventUserRequestMessage result;
         if (msg.isValid()) {
             projectRepository.updateProject(originalMsg.project);
             result = new ProjectUpdaterMessages.ProjectUpdateResultMsg(originalMsg.getRequester(), originalMsg.originalEvent(), originalMsg.project);

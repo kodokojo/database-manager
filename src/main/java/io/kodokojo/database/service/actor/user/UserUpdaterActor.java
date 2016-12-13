@@ -41,7 +41,7 @@ public class UserUpdaterActor extends AbstractActor {
         this.userRepository = userRepository;
 
         receive(ReceiveBuilder
-                .match(UserMessage.UserUpdateMessage.class, this::onUserUpdate)
+                .match(UserMessage.UserUpdateMessageUser.class, this::onUserUpdate)
                 .matchAny(this::unhandled)
                 .build()
         );
@@ -52,7 +52,7 @@ public class UserUpdaterActor extends AbstractActor {
         return Props.create(UserUpdaterActor.class, userRepository);
     }
 
-    private void onUserUpdate(UserMessage.UserUpdateMessage msg) {
+    private void onUserUpdate(UserMessage.UserUpdateMessageUser msg) {
         User oldUser = userRepository.getUserByIdentifier(msg.getUserToUpdate().getIdentifier());
         UserBuilder builder = new UserBuilder(msg.getUserToUpdate());
         builder.setPassword(msg.getNewPassword())
@@ -62,7 +62,7 @@ public class UserUpdaterActor extends AbstractActor {
                 .setEmail(msg.getEmail());
         User user = builder.build();
         userRepository.updateUser(user);
-        sender().tell(new UserMessage.UserUpdateMessageResult(msg.getRequester(),msg.originalEvent(), true), self());
+        sender().tell(new UserMessage.UserUpdateMessageResultUser(msg.getRequester(),msg.originalEvent(), true), self());
         getContext().actorFor(EndpointActor.ACTOR_PATH).tell(new ProjectUpdaterMessages.ListAndUpdateUserToProjectMsg(msg.getRequester(), msg.originalEvent(), new UpdateData<>(oldUser, user)), self());
         getContext().stop(self());
     }

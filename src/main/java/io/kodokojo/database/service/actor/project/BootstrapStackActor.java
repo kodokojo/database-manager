@@ -27,6 +27,7 @@ import io.kodokojo.database.service.BootstrapConfigurationProvider;
 import io.kodokojo.database.service.ConfigurationStore;
 
 import static akka.event.Logging.getLogger;
+import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 public class BootstrapStackActor extends AbstractActor {
@@ -34,13 +35,8 @@ public class BootstrapStackActor extends AbstractActor {
     private final LoggingAdapter LOGGER = getLogger(getContext().system(), this);
 
     public static Props PROPS(BootstrapConfigurationProvider bootstrapConfigurationProvider, ConfigurationStore configurationStore) {
-
-        if (bootstrapConfigurationProvider == null) {
-            throw new IllegalArgumentException("bootstrapConfigurationProvider must be defined.");
-        }
-        if (configurationStore == null) {
-            throw new IllegalArgumentException("configurationStore must be defined.");
-        }
+        requireNonNull(bootstrapConfigurationProvider, "bootstrapConfigurationProvider must be defined.");
+        requireNonNull(configurationStore, "configurationStore must be defined.");
         return Props.create(BootstrapStackActor.class, bootstrapConfigurationProvider, configurationStore);
     }
 
@@ -59,6 +55,9 @@ public class BootstrapStackActor extends AbstractActor {
             }
             BootstrapStackData res = new BootstrapStackData(projectName, sshPortEntrypoint);
             configurationStore.storeBootstrapStackData(res);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Boostraping project '{}' with value :{}", msg.projectName, res);
+            }
             sender().tell(new BootstrapStackResultMsg(res), self());
             getContext().stop(self());
         }).matchAny(this::unhandled).build());

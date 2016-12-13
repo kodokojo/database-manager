@@ -22,7 +22,7 @@ import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import io.kodokojo.commons.event.Event;
 import io.kodokojo.commons.model.User;
-import io.kodokojo.commons.service.actor.message.EventRequestMessage;
+import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 import io.kodokojo.commons.service.repository.UserFetcher;
 
 import java.util.Collections;
@@ -50,7 +50,7 @@ public class UserFetcherActor extends AbstractActor {
                 .matchAny(this::unhandled).build());
     }
 
-    public static class UserFetchMsg extends EventRequestMessage {
+    public static class UserFetchMsg extends EventUserRequestMessage {
 
         private final Set<String> userIds;
 
@@ -64,7 +64,7 @@ public class UserFetcherActor extends AbstractActor {
         }
     }
 
-    public static class UserFetchResultMsg extends EventRequestMessage {
+    public static class UserFetchResultMsg extends EventUserRequestMessage {
 
         private final Set<String> userIdRequeted;
 

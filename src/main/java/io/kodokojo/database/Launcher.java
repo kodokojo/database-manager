@@ -25,8 +25,10 @@ import com.google.inject.name.Names;
 import io.kodokojo.commons.config.MicroServiceConfig;
 import io.kodokojo.commons.config.module.*;
 import io.kodokojo.commons.event.EventBus;
+import io.kodokojo.commons.service.repository.ProjectFetcher;
 import io.kodokojo.database.config.module.AkkaModule;
 import io.kodokojo.database.config.module.EmailModule;
+import io.kodokojo.database.config.module.ZookeeperModule;
 import io.kodokojo.database.service.actor.EndpointActor;
 import io.kodokojo.database.service.actor.EventToActorGateway;
 import io.kodokojo.commons.service.lifecycle.ApplicationLifeCycleManager;
@@ -44,7 +46,7 @@ public class Launcher {
         Injector propertyInjector = Guice.createInjector(new CommonsPropertyModule(args));
         MicroServiceConfig microServiceConfig = propertyInjector.getInstance(MicroServiceConfig.class);
         LOGGER.info("Starting Kodo Kojo {}.", microServiceConfig.name());
-        Injector servicesInjector = propertyInjector.createChildInjector(new UtilityServiceModule(), new EventBusModule(), new DatabaseModule(), new SecurityModule(), new EmailModule());
+        Injector servicesInjector = propertyInjector.createChildInjector(new UtilityServiceModule(), new EventBusModule(), new DatabaseModule(), new SecurityModule(), new EmailModule(), new ZookeeperModule());
         Injector akkaInjector = servicesInjector.createChildInjector(new AkkaModule());
         ActorSystem actorSystem = akkaInjector.getInstance(ActorSystem.class);
         ActorRef endpointActor = actorSystem.actorOf(EndpointActor.PROPS(akkaInjector), "endpoint");
@@ -63,8 +65,8 @@ public class Launcher {
 
             @Provides
             @Singleton
-            EventToActorGateway provideEventToActorGatway(@Named(EndpointActor.NAME) ActorRef akkaEndpoint, UserFetcher userFetcher) {
-                return new EventToActorGateway(akkaEndpoint, userFetcher);
+            EventToActorGateway provideEventToActorGatway(@Named(EndpointActor.NAME) ActorRef akkaEndpoint, UserFetcher userFetcher, ProjectFetcher projectFetcher) {
+                return new EventToActorGateway(akkaEndpoint, userFetcher, projectFetcher);
             }
         });
 
