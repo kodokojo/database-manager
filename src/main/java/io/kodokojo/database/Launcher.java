@@ -25,12 +25,12 @@ import com.google.inject.name.Names;
 import io.kodokojo.commons.config.MicroServiceConfig;
 import io.kodokojo.commons.config.module.*;
 import io.kodokojo.commons.event.EventBus;
+import io.kodokojo.commons.service.actor.EventToEndpointGateway;
 import io.kodokojo.commons.service.repository.ProjectFetcher;
 import io.kodokojo.database.config.module.AkkaModule;
 import io.kodokojo.database.config.module.EmailModule;
 import io.kodokojo.database.config.module.ZookeeperModule;
 import io.kodokojo.database.service.actor.EndpointActor;
-import io.kodokojo.database.service.actor.EventToActorGateway;
 import io.kodokojo.commons.service.lifecycle.ApplicationLifeCycleManager;
 import io.kodokojo.commons.service.repository.UserFetcher;
 import org.slf4j.Logger;
@@ -56,22 +56,21 @@ public class Launcher {
                 bind(ActorRef.class).annotatedWith(Names.named(EndpointActor.NAME)).toInstance(endpointActor);
             }
         });
-
         Injector injector = akkaInjector.createChildInjector(new AbstractModule() {
             @Override
             protected void configure() {
-                //
+            //
             }
 
             @Provides
             @Singleton
-            EventToActorGateway provideEventToActorGatway(@Named(EndpointActor.NAME) ActorRef akkaEndpoint, UserFetcher userFetcher, ProjectFetcher projectFetcher) {
-                return new EventToActorGateway(akkaEndpoint, userFetcher, projectFetcher);
+            EventToEndpointGateway provideEventEventToEndpointGateway(@Named(EndpointActor.NAME) ActorRef akkaEndpoint) {
+                return new EventToEndpointGateway(akkaEndpoint);
             }
-        });
 
+        });
         EventBus eventBus = injector.getInstance(EventBus.class);
-        EventToActorGateway eventToActorGateway = injector.getInstance(EventToActorGateway.class);
+        EventToEndpointGateway eventToActorGateway = injector.getInstance(EventToEndpointGateway.class);
         eventBus.addEventListener(eventToActorGateway);
 
         ApplicationLifeCycleManager applicationLifeCycleManager = servicesInjector.getInstance(ApplicationLifeCycleManager.class);

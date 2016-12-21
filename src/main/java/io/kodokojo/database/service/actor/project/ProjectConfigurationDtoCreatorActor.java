@@ -20,6 +20,7 @@ package io.kodokojo.database.service.actor.project;
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
+import akka.dispatch.Futures;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import io.kodokojo.commons.dto.ProjectConfigurationCreationDto;
@@ -30,6 +31,7 @@ import io.kodokojo.commons.service.actor.message.EventUserReplyMessage;
 import io.kodokojo.database.service.actor.EndpointActor;
 import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 import io.kodokojo.commons.service.repository.ProjectRepository;
+import javaslang.control.Try;
 
 import static akka.event.Logging.getLogger;
 
@@ -57,9 +59,16 @@ public class ProjectConfigurationDtoCreatorActor extends AbstractActor {
             getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(projectConfigurationBuildMsg, self());
         }).match(ProjectConfigurationBuilderActor.ProjectConfigurationBuildResultMsg.class, msg -> {
             LOGGER.debug("Receive a projectConfiguration to add to store.");
-            ProjectConfiguration projectConfiguration = msg.getProjectConfiguration();
-            String projectConfigurationId = projectRepository.addProjectConfiguration(projectConfiguration);
-            originalSender.tell(new ProjectConfigurationDtoCreateResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), projectConfigurationId, projectConfiguration.getName()), self());
+            Try<ProjectConfiguration> projectConfiguration = msg.getProjectConfiguration();
+            if (projectConfiguration.isSuccess()) {
+                String projectConfigurationId = projectRepository.addProjectConfiguration(projectConfiguration.get());
+                originalSender.tell(new ProjectConfigurationDtoCreateResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), projectConfigurationId, initialMsg.projectConfigDto.getName()), self());
+            } else {
+                //originalSender.tell(new ProjectConfigurationDtoCreateFailResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), initialMsg.projectConfigDto.getName(), projectConfiguration.getCause()), self());
+                LOGGER.error("Unable to create project {} , sending failed reason to original sender.", initialMsg.projectConfigDto.getName() );
+                originalSender.tell(Futures.failed(projectConfiguration.getCause()), self());
+            }
+            getContext().stop(self());
         }).matchAny(this::unhandled).build());
     }
 
@@ -100,12 +109,32 @@ public class ProjectConfigurationDtoCreatorActor extends AbstractActor {
             this.projectName = projectName;
         }
 
+
         public String getProjectConfigurationId() {
             return projectConfigurationId;
         }
 
         public String getProjectName() {
             return projectName;
+        }
+    }
+    public static class ProjectConfigurationDtoCreateFailResultMsg extends EventUserRequestMessage {
+
+        private final String projectName;
+        private final Throwable cause;
+
+        public ProjectConfigurationDtoCreateFailResultMsg(User requester, Event request, String projectName, Throwable cause) {
+            super(requester, request);
+            this.projectName = projectName;
+            this.cause = cause;
+        }
+
+        public String getProjectName() {
+            return projectName;
+        }
+
+        public Throwable getCause() {
+            return cause;
         }
     }
 }

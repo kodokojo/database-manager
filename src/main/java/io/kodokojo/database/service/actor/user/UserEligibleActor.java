@@ -43,28 +43,30 @@ public class UserEligibleActor extends AbstractActor {
         receive(ReceiveBuilder.match(UserCreatorActor.EventUserCreateMsg.class, msg -> {
             String id = msg.id;
             String username = msg.username;
-            boolean res = userRepository.identifierExpectedNewUser(id);
-            if (res) {
-                res = userRepository.getUserByUsername(username) == null;
+            boolean identifierExpected = userRepository.identifierExpectedNewUser(id);
+            boolean alreadyExist = false;
+            if (identifierExpected) {
+                alreadyExist = userRepository.getUserByUsername(username) != null;
             }
+            UserEligibleResultMsg resultMsg = new UserEligibleResultMsg(alreadyExist, identifierExpected, true);
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("User {} is {}eligible", msg.getUsername(), res ? "" : "NOT ");
+                LOGGER.debug("User {} is {}eligible to be insert in database.", msg.getUsername(), resultMsg.isValid() ? "" : "NOT ");
             }
-            sender().tell(new UserEligibleResultMsg(res), self());
+            sender().tell(resultMsg, self());
             getContext().stop(self());
-        }).match(UserServiceEligibleMsg.class, msg -> {
+        }).match(UserEligibleMsg.class, msg -> {
             boolean res = userRepository.getUserServiceByName(msg.username) == null;
-            sender().tell(new UserEligibleResultMsg(res), self());
+            sender().tell(new UserEligibleResultMsg(res, true, true), self());
             getContext().stop(self());
         })
                 .matchAny(this::unhandled).build());
 
     }
 
-    public static class UserServiceEligibleMsg {
+    public static class UserEligibleMsg {
         private final String username;
 
-        public UserServiceEligibleMsg(String username) {
+        public UserEligibleMsg(String username) {
             if (isBlank(username)) {
                 throw new IllegalArgumentException("username must be defined.");
             }
@@ -74,10 +76,32 @@ public class UserEligibleActor extends AbstractActor {
 
     public static class UserEligibleResultMsg {
 
-        public final boolean isValid;
+        private final boolean alreadyExist;
 
-        public UserEligibleResultMsg(boolean isValid) {
-            this.isValid = isValid;
+        private final boolean idExpected;
+
+        private final boolean userNameValid;
+
+        public UserEligibleResultMsg(boolean alreadyExist, boolean idExpected, boolean userNameValid) {
+            this.alreadyExist = alreadyExist;
+            this.idExpected = idExpected;
+            this.userNameValid = userNameValid;
+        }
+
+        public boolean isValid() {
+            return idExpected && userNameValid;
+        }
+
+        public boolean isAlreadyExist() {
+            return alreadyExist;
+        }
+
+        public boolean isIdExpected() {
+            return idExpected;
+        }
+
+        public boolean isUserNameValid() {
+            return userNameValid;
         }
     }
 

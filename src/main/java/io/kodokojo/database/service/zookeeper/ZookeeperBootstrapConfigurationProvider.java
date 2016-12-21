@@ -83,9 +83,7 @@ public class ZookeeperBootstrapConfigurationProvider implements BootstrapConfigu
                 return res + INITIAL_PORT;
             }
         });
-        return aTry.onFailure(e -> {
-            LOGGER.error("An error occur while trying to provide a new TCP port for project {}", projectName, e);
-        }).getOrElse(-1);
+        return aTry.getOrElse(-1);
     }
 
     @Override

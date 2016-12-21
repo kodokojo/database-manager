@@ -118,7 +118,7 @@ public class UserCreatorActor extends AbstractActor {
     }
 
     private void onUserIsEligible(UserEligibleActor.UserEligibleResultMsg r) {
-        isValid = r.isValid;
+        isValid = r.isValid();
         if (isValid) {
             isReadyToStore();
         } else {

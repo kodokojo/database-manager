@@ -34,6 +34,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
 import static akka.event.Logging.getLogger;
+import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 public class UserServiceCreatorActor extends AbstractActor {
@@ -41,9 +42,7 @@ public class UserServiceCreatorActor extends AbstractActor {
     private final LoggingAdapter LOGGER = getLogger(getContext().system(), this);
 
     public static Props PROPS(UserRepository userRepository) {
-        if (userRepository == null) {
-            throw new IllegalArgumentException("userRepository must be defined.");
-        }
+        requireNonNull(userRepository, "userRepository must be defined.");
         return Props.create(UserServiceCreatorActor.class, userRepository);
     }
 
@@ -60,24 +59,27 @@ public class UserServiceCreatorActor extends AbstractActor {
     private ActorRef originalActor;
 
     public UserServiceCreatorActor(UserRepository userRepository) {
-        if (userRepository == null) {
-            throw new IllegalArgumentException(" must be defined.");
-        }
+        requireNonNull(userRepository, "userRepository must be defined.");
+
         this.userRepository = userRepository;
         receive(ReceiveBuilder.match(UserServiceCreateMsg.class, u -> {
             originalActor = sender();
             message = u;
             getContext().actorOf(UserGenerateSecurityData.PROPS()).tell(new UserGenerateSecurityData.GenerateSecurityMsg(), self());
-            getContext().actorOf(UserEligibleActor.PROPS(userRepository)).tell(new UserEligibleActor.UserServiceEligibleMsg(u.username), self());
+            getContext().actorOf(UserEligibleActor.PROPS(userRepository)).tell(new UserEligibleActor.UserEligibleMsg(u.username), self());
 
         })
                 .match(UserEligibleActor.UserEligibleResultMsg.class, r -> {
-                    isValid = r.isValid;
+                    isValid = r.isValid();
                     if (isValid) {
                         isReadyToStore();
                     } else {
-                        originalActor.forward(r, getContext());
-                        getContext().stop(self());
+                        if (!r.isIdExpected()) {
+                            LOGGER.warning("User {} have not expected Id.", message.getUsername());
+                            originalActor.tell(r, self());
+                            getContext().stop(self());
+                        }
+                        LOGGER.warning("User service account {} not eligible.", message.getUsername());
                     }
                 })
                 .match(UserGenerateSecurityData.UserSecurityDataMsg.class, msg -> {

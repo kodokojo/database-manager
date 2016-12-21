@@ -18,13 +18,18 @@
 package io.kodokojo.database.service.actor.project;
 
 import akka.actor.AbstractActor;
+import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
+import akka.actor.SupervisorStrategy;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import io.kodokojo.commons.service.BrickFactory;
 import io.kodokojo.commons.service.repository.ProjectRepository;
 import io.kodokojo.database.service.BootstrapConfigurationProvider;
 import io.kodokojo.database.service.ConfigurationStore;
+import scala.concurrent.duration.Duration;
+
+import java.util.concurrent.TimeUnit;
 
 import static akka.event.Logging.getLogger;
 import static java.util.Objects.requireNonNull;
