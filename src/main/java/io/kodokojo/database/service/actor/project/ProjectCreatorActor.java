@@ -27,7 +27,6 @@ import io.kodokojo.commons.model.Project;
 import io.kodokojo.commons.model.ProjectBuilder;
 import io.kodokojo.commons.model.ProjectConfiguration;
 import io.kodokojo.commons.model.User;
-import io.kodokojo.commons.service.actor.message.EventReplyableMessage;
 import io.kodokojo.commons.service.actor.message.EventUserReplyMessage;
 import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 import io.kodokojo.commons.service.actor.right.RightEndpointActor;
@@ -105,7 +104,7 @@ public class ProjectCreatorActor extends AbstractActor {
 
         private final boolean isEventBusOrigin;
 
-        public ProjectCreateMsg(User requester, Event request, Project project, String projectConfigurationIdentifier , boolean isEventBusOrigin) {
+        public ProjectCreateMsg(User requester, Event request, Project project, String projectConfigurationIdentifier, boolean isEventBusOrigin) {
             super(requester, request);
             if (project == null) {
                 throw new IllegalArgumentException("project must be defined.");
@@ -117,6 +116,7 @@ public class ProjectCreatorActor extends AbstractActor {
             this.projectConfigurationIdentifier = projectConfigurationIdentifier;
             this.isEventBusOrigin = isEventBusOrigin;
         }
+
         public ProjectCreateMsg(User requester, Event request, Project project, String projectConfigurationIdentifier) {
             this(requester, request, project, projectConfigurationIdentifier, false);
         }
@@ -131,8 +131,8 @@ public class ProjectCreatorActor extends AbstractActor {
 
         private final Project project;
 
-        public ProjectCreateResultMsg(User requester,Event request, Project project) {
-            super(requester, request,Event.PROJECT_CREATION_REPLY, project);
+        public ProjectCreateResultMsg(User requester, Event request, Project project) {
+            super(requester, request, Event.PROJECT_CREATION_REPLY, project);
             if (project == null) {
                 throw new IllegalArgumentException("project must be defined.");
             }

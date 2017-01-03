@@ -153,11 +153,12 @@ public class EndpointActor extends AbstractEventEndpointActor {
         if (msg instanceof UserCreatorActor.UserCreateResultMsg) {
             UserCreatorActor.UserCreateResultMsg createResultMsg = (UserCreatorActor.UserCreateResultMsg) msg;
             User user = createResultMsg.getUser();
-            EventBuilder eventBuilder = eventBuilderFactory.create();
-            eventBuilder.setEventType(Event.USER_CREATION_EVENT);
-            eventBuilder.copyCustomHeader(msg.originalEvent(), Event.REQUESTER_ID_CUSTOM_HEADER);
-            eventBuilder.addCustomHeader(Event.ENTITY_ID_CUSTOM_HEADER, user.getEntityIdentifier());
-            eventBuilder.setPayload(new UserCreated(user.getIdentifier(), user.getUsername(), user.getEmail()));
+            EventBuilder eventBuilder = eventBuilderFactory.create()
+                    .setEventType(Event.USER_CREATION_EVENT)
+                    .copyCustomHeader(msg.originalEvent(), Event.REQUESTER_ID_CUSTOM_HEADER)
+                    .addCustomHeader(Event.ENTITY_ID_CUSTOM_HEADER, user.getEntityIdentifier())
+                    .setPayload(new UserCreated(user.getIdentifier(), user.getUsername(), user.getEmail()));
+
             eventBus.send(eventBuilder.build());
         } else if (msg instanceof ProjectConfigurationDtoCreatorActor.ProjectConfigurationDtoCreateResultMsg) {
             ProjectConfigurationDtoCreatorActor.ProjectConfigurationDtoCreateResultMsg createResultMsg = (ProjectConfigurationDtoCreatorActor.ProjectConfigurationDtoCreateResultMsg) msg;
@@ -166,9 +167,9 @@ public class EndpointActor extends AbstractEventEndpointActor {
             if (user != null) {
                 eventBuilder.addCustomHeader(Event.ENTITY_ID_CUSTOM_HEADER, user.getEntityIdentifier());
             }
-            eventBuilder.setEventType(Event.PROJECTCONFIG_CREATION_EVENT);
-            eventBuilder.copyCustomHeader(msg.originalEvent(), Event.REQUESTER_ID_CUSTOM_HEADER);
-            eventBuilder.setPayload(new ProjectConfigurationCreated(createResultMsg.getProjectConfigurationId(), createResultMsg.getProjectName()));
+            eventBuilder.setEventType(Event.PROJECTCONFIG_CREATION_EVENT)
+                    .copyCustomHeader(msg.originalEvent(), Event.REQUESTER_ID_CUSTOM_HEADER)
+                    .setPayload(new ProjectConfigurationCreated(createResultMsg.getProjectConfigurationId(), createResultMsg.getProjectName()));
             eventBus.send(eventBuilder.build());
         }
     }
