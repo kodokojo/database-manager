@@ -1,5 +1,5 @@
 /**
- * Kodo Kojo - Software factory done right
+ * Kodo Kojo - Microservice which allow to access to Database.
  * Copyright © 2016 Kodo Kojo (infos@kodokojo.io)
  *
  * This program is free software: you can redistribute it and/or modify
