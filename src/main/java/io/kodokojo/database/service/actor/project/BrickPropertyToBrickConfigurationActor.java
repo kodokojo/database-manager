@@ -21,13 +21,17 @@ import akka.actor.AbstractActor;
 import akka.actor.Props;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
+import io.kodokojo.commons.event.Event;
 import io.kodokojo.commons.model.ProjectConfiguration;
+import io.kodokojo.commons.model.User;
+import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 import io.kodokojo.commons.service.repository.ProjectRepository;
 
 import java.io.Serializable;
 import java.util.Map;
 
 import static akka.event.Logging.getLogger;
+import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 public class BrickPropertyToBrickConfigurationActor extends AbstractActor {
@@ -57,7 +61,7 @@ public class BrickPropertyToBrickConfigurationActor extends AbstractActor {
                 .matchAny(this::unhandled).build());
     }
 
-    public static class BrickPropertyToBrickConfigurationMsg {
+    public static class BrickPropertyToBrickConfigurationMsg extends EventUserRequestMessage {
 
         private final String projectConfigurationIdentifier;
 
@@ -67,13 +71,10 @@ public class BrickPropertyToBrickConfigurationActor extends AbstractActor {
 
         private final Map<String, Serializable> properties;
 
-        public BrickPropertyToBrickConfigurationMsg(String projectConfigurationIdentifier, String stackName, String brickName, Map<String, Serializable> properties) {
-            if (projectConfigurationIdentifier == null) {
-                throw new IllegalArgumentException("projectConfigurationIdentifier must be defined.");
-            }
-            if (properties == null) {
-                throw new IllegalArgumentException("properties must be defined.");
-            }
+        public BrickPropertyToBrickConfigurationMsg(User requester, Event request, String projectConfigurationIdentifier, String stackName, String brickName, Map<String, Serializable> properties) {
+            super(requester, request);
+            requireNonNull(projectConfigurationIdentifier, "projectConfigurationIdentifier must be defined.");
+            requireNonNull(properties, "properties must be defined.");
             if (isBlank(stackName)) {
                 throw new IllegalArgumentException("stackName must be defined.");
             }

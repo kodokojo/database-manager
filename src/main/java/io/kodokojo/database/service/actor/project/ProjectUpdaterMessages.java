@@ -89,25 +89,5 @@ public interface ProjectUpdaterMessages {
         }
     }
 
-    class ListAndUpdateUserToProjectResultMsg extends EventUserRequestMessage {
 
-        private final ListAndUpdateUserToProjectMsg request;
-
-        private final boolean success;
-
-        public ListAndUpdateUserToProjectResultMsg(User requester, Event eventRequest, ListAndUpdateUserToProjectMsg request, boolean success) {
-            super(requester, eventRequest);
-            requireNonNull(request, "request must be defined.");
-            this.request = request;
-            this.success = success;
-        }
-
-        public ListAndUpdateUserToProjectMsg getRequest() {
-            return request;
-        }
-
-        public boolean isSuccess() {
-            return success;
-        }
-    }
 }

@@ -1,17 +1,17 @@
 /**
  * Kodo Kojo - Microservice which allow to access to Database.
  * Copyright © 2016 Kodo Kojo (infos@kodokojo.io)
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -29,10 +29,13 @@ import io.kodokojo.commons.dto.UserUpdateDto;
 import io.kodokojo.commons.event.Event;
 import io.kodokojo.commons.event.EventBuilder;
 import io.kodokojo.commons.event.EventBuilderFactory;
+import io.kodokojo.commons.event.payload.ProjectConfigurationChangeUserRequest;
 import io.kodokojo.commons.event.payload.ProjectConfigurationCreated;
 import io.kodokojo.commons.event.payload.UserCreated;
 import io.kodokojo.commons.event.payload.UserCreationRequest;
+import io.kodokojo.commons.model.BrickConfigurerData;
 import io.kodokojo.commons.model.Project;
+import io.kodokojo.commons.model.TypeChange;
 import io.kodokojo.commons.model.User;
 import io.kodokojo.commons.service.EmailSender;
 import io.kodokojo.commons.service.actor.AbstractEventEndpointActor;
@@ -106,12 +109,29 @@ public class EndpointActor extends AbstractEventEndpointActor {
                 msg = new ProjectCreatorActor.ProjectCreateMsg(requester, event, project, project.getProjectConfigurationIdentifier(), true);
                 actorRef = projectEndpoint;
                 break;
-            /*
+
+            case Event.BRICK_STATE_UPDATE:
+                msg = new BrickStateEventPersistenceActor.BrickStateEventPersistenceMsg(requester, event);
+                actorRef = projectEndpoint;
+                break;
+
             case Event.PROJECTCONFIG_CHANGE_USER_REQUEST:
                 ProjectConfigurationChangeUserRequest changeUserRequest = event.getPayload(ProjectConfigurationChangeUserRequest.class);
-                msg = new ProjectConfigurationChangeUserActor.ProjectConfigurationChangeEventMsg(requester, event, TypeChange.valueOf(changeUserRequest.getTypeChange().toString()), changeUserRequest.getProjectConfigurationId(), changeUserRequest.getUserIdentifiers());
+                msg = new ProjectConfigurationChangeUserActor.ProjectConfigurationChangeEventUserMsg(requester, event, TypeChange.valueOf(changeUserRequest.getTypeChange().toString()), changeUserRequest.getProjectConfigurationId(), changeUserRequest.getUserIdentifiers());
+                actorRef = projectEndpoint;
                 break;
-                */
+
+            case Event.BRICK_PROPERTY_UPDATE_REQUEST:
+                BrickConfigurerData brickConfigurerData = event.getPayload(BrickConfigurerData.class);
+                msg = new BrickPropertyToBrickConfigurationActor.BrickPropertyToBrickConfigurationMsg(
+                        requester,
+                        event,
+                        brickConfigurerData.getProjectConfigurationIdentifier(),
+                        brickConfigurerData.getStackName(),
+                        brickConfigurerData.getBrickName(),
+                        brickConfigurerData.getContext()
+                );
+                break;
             default:
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Not recognize event type '{}' from following event, drop it : {}", event.getEventType(), Event.convertToJson(event));
@@ -160,6 +180,12 @@ public class EndpointActor extends AbstractEventEndpointActor {
         }).match(ProjectUpdaterMessages.ListAndUpdateUserToProjectMsg.class, msg -> {
             dispatch(msg, sender(), projectEndpoint);
         }).match(BootstrapStackActor.BootstrapStackMsg.class, msg -> {
+            dispatch(msg, sender(), projectEndpoint);
+        }).match(BrickPropertyToBrickConfigurationActor.BrickPropertyToBrickConfigurationMsg.class, msg -> {
+            dispatch(msg, sender(), projectEndpoint);
+        }).match(ProjectUpdaterMessages.ListAndUpdateUserToProjectMsg.class, msg -> {
+            dispatch(msg, sender(), projectEndpoint);
+        }).match(BrickUpdateUserMsg.class, msg -> {
             dispatch(msg, sender(), projectEndpoint);
         });
 
