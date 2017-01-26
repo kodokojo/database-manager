@@ -2,7 +2,7 @@
 <!--
 
     Kodo Kojo - Microservice which allow to access to Database.
-    Copyright © 2016 Kodo Kojo (infos@kodokojo.io)
+    Copyright © 2017 Kodo Kojo (infos@kodokojo.io)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -557,10 +557,10 @@
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
         </repository>
-        <repository>
+        <!--repository>
             <id>nexus-kodokojo.kodokojo.io</id>
             <url>https://nexus-kodokojo.kodokojo.io</url>
-        </repository>
+        </repository-->
     </repositories>
     <distributionManagement>
         <repository>

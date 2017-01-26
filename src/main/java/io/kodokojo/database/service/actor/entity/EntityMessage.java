@@ -1,6 +1,6 @@
 /**
  * Kodo Kojo - Microservice which allow to access to Database.
- * Copyright © 2016 Kodo Kojo (infos@kodokojo.io)
+ * Copyright © 2017 Kodo Kojo (infos@kodokojo.io)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
