@@ -57,19 +57,20 @@ def buildAndPushDocker() {
         def version = version()
         def commit = commitSha1()
         def tag = (env.BRANCH_NAME == "staging" ? "staging" : "dev")
-        def imageName = "kodokojo/api:${tag}"
+        def imageName = "kodokojo/database:${tag}"
 
         try {
 
             sh 'mkdir -p target/docker'
             sh 'cp src/main/docker/local/Dockerfile target/docker/'
-            sh "cp target/kodokojo-${version}-runnable.jar target/docker/kodokojo.jar"
+            sh "cp target/database-${version}-runnable.jar target/docker/kodokojo.jar"
             sh "docker build -t=\"${imageName}\" target/docker/ && docker push ${imageName}"
 
             slackSend channel: '#dev', color: '#6CBDEC', message: "Build and push Docker image *${imageName}* from branch *${env.BRANCH_NAME}* on commit `${commit}` *SUCCESS*."
         } catch (Exception e) {
             slackSend channel: '#dev', color: 'danger', message: "Build and push Docker image *${imageName}* from branch *${env.BRANCH_NAME}* on commit `${commit}` *FAILED*:\n```${e.getMessage()}```"
         }
+
     }
 }
 
