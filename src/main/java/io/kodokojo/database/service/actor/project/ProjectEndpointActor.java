@@ -79,6 +79,8 @@ public class ProjectEndpointActor extends AbstractActor {
                     getContext().actorOf(BootstrapStackActor.PROPS(bootstrapConfigurationProvider, configurationStore)).forward(msg, getContext());
                 }).match(ProjectConfigurationChangeUserActor.ProjectConfigurationChangeEventUserMsg.class, msg -> {
                     getContext().actorOf(ProjectConfigurationChangeUserActor.PROPS(projectRepository)).forward(msg, getContext());
+                }).match(BrickStateEventPersistenceActor.BrickStateEventPersistenceMsg.class, msg -> {
+                    getContext().actorOf(BrickStateEventPersistenceActor.PROPS(projectRepository)).forward(msg, getContext());
                 })
                 .matchAny(this::unhandled).build());
     }
