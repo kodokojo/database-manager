@@ -42,9 +42,9 @@ public class RedisProjectStoreTest {
         KeyGenerator kg = KeyGenerator.getInstance("AES");
 
         jedisPool = mock(JedisPool.class);
-        redisProjectStore = new RedisProjectStore(kg.generateKey(), "localhost", 6379) {
+        redisProjectStore = new RedisProjectStore(kg.generateKey(), "localhost", 6379, null) {
             @Override
-            protected JedisPool createJedisPool(String host, int port) {
+            protected JedisPool createJedisPool(String host, int port, String password) {
                 return jedisPool;
             }
         };

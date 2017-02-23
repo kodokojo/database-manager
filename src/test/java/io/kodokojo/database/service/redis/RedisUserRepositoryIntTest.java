@@ -90,7 +90,7 @@ public class RedisUserRepositoryIntTest {
     @DockerIsRequire
     public void add_user() {
 
-        UserRepository userRepository = new RedisUserRepository(aesKey, redisHost, redisPort);
+        UserRepository userRepository = new RedisUserRepository(aesKey, redisHost, redisPort, null);
 
         String email = "jpthiery@xebia.fr";
         User jpthiery = new User(userRepository.generateId(), "1234","Jean-Pascal THIERY", "jpthiery", email, "jpascal", RSAUtils.encodePublicKey((RSAPublicKey) keyPair.getPublic(), email));
@@ -105,7 +105,7 @@ public class RedisUserRepositoryIntTest {
     @Test
     @DockerIsRequire
     public void add_user_service() {
-        UserRepository userRepository = new RedisUserRepository(aesKey, redisHost, redisPort);
+        UserRepository userRepository = new RedisUserRepository(aesKey, redisHost, redisPort, null);
         UserService jenkins = new UserService(userRepository.generateId(), "jenkins", "jenkins", "jenkins", (RSAPrivateKey) keyPair.getPrivate(), (RSAPublicKey) keyPair.getPublic());
         userRepository.addUserService(jenkins);
 

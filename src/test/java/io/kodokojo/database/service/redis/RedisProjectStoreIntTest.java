@@ -60,7 +60,7 @@ public class RedisProjectStoreIntTest implements DockerTestApplicationBuilder {
         Service service = startRedis(dockerTestSupport).get();
         String redisHost = service.getHost();
         int redisPort = service.getPort();
-        redisProjectStore = new RedisProjectStore(aesKey, redisHost, redisPort);
+        redisProjectStore = new RedisProjectStore(aesKey, redisHost, redisPort, null);
     }
 
     @After
