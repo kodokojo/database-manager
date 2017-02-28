@@ -35,10 +35,8 @@ import io.kodokojo.database.service.actor.user.UserServiceCreatorActor;
 import io.kodokojo.database.service.actor.user.UserServiceFetcherActor;
 import javaslang.control.Try;
 import org.apache.commons.collections4.CollectionUtils;
-import scala.concurrent.duration.Duration;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -183,7 +181,7 @@ public class ProjectConfigurationBuilderActor extends AbstractActor {
             }).collect(Collectors.toSet());
 
 
-            ProjectConfiguration projectConfiguration = new ProjectConfiguration(requester.getEntityIdentifier(), projectConfigurationCreationDto.getName(), userService, new ArrayList<>(admins), stackConfiguration, new ArrayList<>(users));
+            ProjectConfiguration projectConfiguration = new ProjectConfiguration(requester.getOrganisationIds().iterator().next(), projectConfigurationCreationDto.getName(), userService, new ArrayList<>(admins), stackConfiguration, new ArrayList<>(users));
             originalSender.tell(new ProjectConfigurationBuildResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), projectConfiguration), self());
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Return a built ProjectConfiguration for project {} to actor {}.", initialMsg.getProjectConfigurationCreationDto().getName(), originalSender);

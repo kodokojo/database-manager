@@ -26,6 +26,7 @@ import io.kodokojo.commons.config.MicroServiceConfig;
 import io.kodokojo.commons.config.module.*;
 import io.kodokojo.commons.event.EventBus;
 import io.kodokojo.commons.service.actor.EventToEndpointGateway;
+import io.kodokojo.commons.service.healthcheck.HttpHealthCheckEndpoint;
 import io.kodokojo.commons.service.repository.ProjectFetcher;
 import io.kodokojo.database.config.module.AkkaModule;
 import io.kodokojo.database.config.module.EmailModule;
@@ -46,7 +47,15 @@ public class Launcher {
         Injector propertyInjector = Guice.createInjector(new CommonsPropertyModule(args));
         MicroServiceConfig microServiceConfig = propertyInjector.getInstance(MicroServiceConfig.class);
         LOGGER.info("Starting Kodo Kojo {}.", microServiceConfig.name());
-        Injector servicesInjector = propertyInjector.createChildInjector(new UtilityServiceModule(), new EventBusModule(), new DatabaseModule(), new SecurityModule(), new EmailModule(), new ZookeeperModule());
+        Injector servicesInjector = propertyInjector.createChildInjector(
+                new UtilityServiceModule(),
+                new EventBusModule(),
+                new DatabaseModule(),
+                new SecurityModule(),
+                new EmailModule(),
+                new ZookeeperModule(),
+                new CommonsHealthCheckModule()
+        );
         Injector akkaInjector = servicesInjector.createChildInjector(new AkkaModule());
         ActorSystem actorSystem = akkaInjector.getInstance(ActorSystem.class);
         ActorRef endpointActor = actorSystem.actorOf(EndpointActor.PROPS(akkaInjector), "endpoint");
@@ -84,6 +93,9 @@ public class Launcher {
             }
         });
         eventBus.connect();
+
+        HttpHealthCheckEndpoint httpHealthCheckEndpoint = injector.getInstance(HttpHealthCheckEndpoint.class);
+        httpHealthCheckEndpoint.start();
 
         LOGGER.info("Kodo Kojo {} started.", microServiceConfig.name());
 

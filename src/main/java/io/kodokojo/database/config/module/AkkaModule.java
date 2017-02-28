@@ -27,12 +27,12 @@ import com.google.inject.name.Named;
 import io.kodokojo.commons.config.ApplicationConfig;
 import io.kodokojo.database.service.BootstrapConfigurationProvider;
 import io.kodokojo.database.service.ConfigurationStore;
-import io.kodokojo.database.service.actor.entity.EntityEndpointActor;
+import io.kodokojo.database.service.actor.organisation.OrganisationEndpointActor;
 import io.kodokojo.database.service.actor.project.ProjectEndpointActor;
 import io.kodokojo.database.service.actor.user.UserEndpointActor;
 import io.kodokojo.commons.service.BrickFactory;
 import io.kodokojo.commons.service.actor.DeadLetterActor;
-import io.kodokojo.commons.service.repository.EntityRepository;
+import io.kodokojo.commons.service.repository.OrganisationRepository;
 import io.kodokojo.commons.service.repository.ProjectRepository;
 import io.kodokojo.commons.service.repository.UserRepository;
 
@@ -60,9 +60,9 @@ public class AkkaModule extends AbstractModule {
     }
 
     @Provides
-    @Named(EntityEndpointActor.NAME)
-    Props provideEntityEndpointProps(EntityRepository entityRepository) {
-        return EntityEndpointActor.PROPS(entityRepository);
+    @Named(OrganisationEndpointActor.NAME)
+    Props provideEntityEndpointProps(OrganisationRepository entityRepository) {
+        return OrganisationEndpointActor.PROPS(entityRepository);
     }
 
 }

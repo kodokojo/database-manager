@@ -42,9 +42,9 @@ import io.kodokojo.commons.service.actor.AbstractEventEndpointActor;
 import io.kodokojo.commons.service.actor.EmailSenderActor;
 import io.kodokojo.commons.service.actor.message.EventBusOriginMessage;
 import io.kodokojo.commons.service.actor.message.EventReplyableMessage;
-import io.kodokojo.database.service.actor.entity.EntityCreatorActor;
-import io.kodokojo.database.service.actor.entity.EntityEndpointActor;
-import io.kodokojo.database.service.actor.entity.EntityMessage;
+import io.kodokojo.database.service.actor.organisation.OrganisationCreatorActor;
+import io.kodokojo.database.service.actor.organisation.OrganisationEndpointActor;
+import io.kodokojo.database.service.actor.organisation.OrganisationMessage;
 import io.kodokojo.database.service.actor.project.*;
 import io.kodokojo.database.service.actor.user.*;
 import javaslang.control.Try;
@@ -59,10 +59,9 @@ public class EndpointActor extends AbstractEventEndpointActor {
 
     private final ActorRef userEndpoint;
 
-    private final ActorRef entityEndpoint;
+    private final ActorRef organisationEndpoint;
 
     private final ActorRef projectEndpoint;
-
 
     public static Props PROPS(Injector injector) {
         requireNonNull(injector, "injector must be defined.");
@@ -73,7 +72,7 @@ public class EndpointActor extends AbstractEventEndpointActor {
         super(injector);
 
         userEndpoint = getContext().actorOf(injector.getInstance(Key.get(Props.class, Names.named(UserEndpointActor.NAME))), "userEndpoint");
-        entityEndpoint = getContext().actorOf(injector.getInstance(Key.get(Props.class, Names.named(EntityEndpointActor.NAME))), "entityEndpoint");
+        organisationEndpoint = getContext().actorOf(injector.getInstance(Key.get(Props.class, Names.named(OrganisationEndpointActor.NAME))), "organisationEndpoint");
         projectEndpoint = getContext().actorOf(injector.getInstance(Key.get(Props.class, Names.named(ProjectEndpointActor.NAME))), "projectEndpoint");
     }
 
@@ -154,10 +153,10 @@ public class EndpointActor extends AbstractEventEndpointActor {
             dispatch(msg, sender(), userEndpoint);
         }).match(UserServiceCreatorActor.UserServiceCreateMsg.class, msg -> {
             dispatch(msg, sender(), userEndpoint);
-        }).match(EntityCreatorActor.EntityCreateMsg.class, msg -> {
-            dispatch(msg, sender(), entityEndpoint);
-        }).match(EntityMessage.AddUserToEntityMsg.class, msg -> {
-            dispatch(msg, sender(), entityEndpoint);
+        }).match(OrganisationCreatorActor.OrganisationCreateMsg.class, msg -> {
+            dispatch(msg, sender(), organisationEndpoint);
+        }).match(OrganisationMessage.AddUserToOrganisationMsg.class, msg -> {
+            dispatch(msg, sender(), organisationEndpoint);
         }).match(ProjectConfigurationBuilderActor.ProjectConfigurationBuildMsg.class, msg -> {
             dispatch(msg, sender(), projectEndpoint);
         }).match(ProjectConfigurationDtoCreatorActor.ProjectConfigurationDtoCreateMsg.class, msg -> {
@@ -199,7 +198,7 @@ public class EndpointActor extends AbstractEventEndpointActor {
             EventBuilder eventBuilder = eventBuilderFactory.create()
                     .setEventType(Event.USER_CREATION_EVENT)
                     .copyCustomHeader(msg.originalEvent(), Event.REQUESTER_ID_CUSTOM_HEADER)
-                    .addCustomHeader(Event.ENTITY_ID_CUSTOM_HEADER, user.getEntityIdentifier())
+                    .addCustomHeader(Event.ORGANISATION_ID_CUSTOM_HEADER, user.getOrganisationIds().iterator().next())
                     .setPayload(new UserCreated(user.getIdentifier(), user.getUsername(), user.getEmail()));
 
             eventBus.send(eventBuilder.build());
@@ -208,7 +207,7 @@ public class EndpointActor extends AbstractEventEndpointActor {
             EventBuilder eventBuilder = eventBuilderFactory.create();
             User user = createResultMsg.getRequester();
             if (user != null) {
-                eventBuilder.addCustomHeader(Event.ENTITY_ID_CUSTOM_HEADER, user.getEntityIdentifier());
+                eventBuilder.addCustomHeader(Event.ORGANISATION_ID_CUSTOM_HEADER, createResultMsg.getOrganisationId());
             }
             eventBuilder.setEventType(Event.PROJECTCONFIG_CREATION_EVENT)
                     .copyCustomHeader(msg.originalEvent(), Event.REQUESTER_ID_CUSTOM_HEADER)

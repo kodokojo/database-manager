@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package io.kodokojo.database.service.actor.entity;
+package io.kodokojo.database.service.actor.organisation;
 
 import io.kodokojo.commons.event.Event;
 import io.kodokojo.commons.model.User;
@@ -23,14 +23,16 @@ import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 
-public interface EntityMessage {
-    class AddUserToEntityMsg extends EventUserRequestMessage {
+public interface OrganisationMessage {
+    class AddUserToOrganisationMsg extends EventUserRequestMessage {
 
         protected final String userId;
 
         protected final String entityId;
 
-        public AddUserToEntityMsg(User requester, Event request, String userId, String entityId) {
+        protected final boolean admin;
+
+        public AddUserToOrganisationMsg(User requester, Event request, String userId, String entityId, boolean admin) {
             super(requester, request);
             if (isBlank(userId)) {
                 throw new IllegalArgumentException("userId must be defined.");
@@ -40,6 +42,7 @@ public interface EntityMessage {
             }
             this.userId = userId;
             this.entityId = entityId;
+            this.admin = admin;
         }
     }
 }

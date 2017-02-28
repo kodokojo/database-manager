@@ -15,36 +15,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package io.kodokojo.database.service.actor.entity;
+package io.kodokojo.database.service.actor.organisation;
 
 import akka.actor.AbstractActor;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
-import io.kodokojo.commons.service.repository.EntityRepository;
+import io.kodokojo.commons.service.repository.OrganisationRepository;
 
 import static java.util.Objects.requireNonNull;
 
-public class AddUserToEntityActor extends AbstractActor {
+public class AddUserToOrganisationActor extends AbstractActor {
 
-    private final EntityRepository entityRepository;
+    private final OrganisationRepository entityRepository;
 
-    public AddUserToEntityActor(EntityRepository entityRepository) {
+    public AddUserToOrganisationActor(OrganisationRepository entityRepository) {
         this.entityRepository = entityRepository;
 
         receive(ReceiveBuilder
-                .match(EntityMessage.AddUserToEntityMsg.class, this::onAddUserToEntityMesg)
+                .match(OrganisationMessage.AddUserToOrganisationMsg.class, this::onAddUserToEntityMesg)
                 .matchAny(this::unhandled)
                 .build());
     }
 
-    private void onAddUserToEntityMesg(EntityMessage.AddUserToEntityMsg msg) {
-        entityRepository.addUserToEntity(msg.userId, msg.entityId);
+    private void onAddUserToEntityMesg(OrganisationMessage.AddUserToOrganisationMsg msg) {
+        entityRepository.addUserToOrganisation(msg.userId, msg.entityId);
         getContext().stop(self());
     }
 
-    public static Props PROPS(EntityRepository entityRepository) {
+    public static Props PROPS(OrganisationRepository entityRepository) {
         requireNonNull(entityRepository, "entityRepository must be defined.");
-        return Props.create(AddUserToEntityActor.class, entityRepository);
+        return Props.create(AddUserToOrganisationActor.class, entityRepository);
     }
 
 }

@@ -69,7 +69,7 @@ public class ProjectUpdaterActorTest implements DataBuilder {
         ProjectRepository projectRepository = Mockito.mock(ProjectRepository.class);
         ProjectConfiguration projectConfiguration = Mockito.mock(ProjectConfiguration.class);
         Mockito.when(projectRepository.getProjectConfigurationById("1234")).thenReturn(projectConfiguration);
-        Mockito.when(projectConfiguration.getAdmins()).thenReturn(Collections.singletonList(user).iterator());
+        Mockito.when(projectConfiguration.getTeamLeaders()).thenReturn(Collections.singletonList(user).iterator());
 
         TestActorRef<Actor> subject = TestActorRef.create(actorSystem, ProjectUpdaterActor.props(projectRepository));
 
