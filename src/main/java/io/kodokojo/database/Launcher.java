@@ -39,11 +39,10 @@ public class Launcher {
 
     public static void main(String[] args) {
 
-
         Injector propertyInjector = Guice.createInjector(new CommonsPropertyModule(args), new PropertyModule());
         DatabaseConfig databaseConfig = propertyInjector.getInstance(DatabaseConfig.class);
         AbstractModule configurationStoreModule = new ZookeeperModule();
-        if (databaseConfig.configurationStore().equals("noop")) {
+        if (databaseConfig.configurationStoreSelector().equals("noop")) {
             configurationStoreModule = new NoopCongurationStoreModule();
         }
 
@@ -92,6 +91,5 @@ public class Launcher {
         LOGGER.info("Kodo Kojo {} started.", microServiceConfig.name());
 
     }
-
 
 }

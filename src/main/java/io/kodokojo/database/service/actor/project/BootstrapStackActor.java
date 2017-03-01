@@ -45,7 +45,7 @@ public class BootstrapStackActor extends AbstractActor {
 
     public static Props PROPS(BootstrapConfigurationProvider bootstrapConfigurationProvider, ConfigurationStore configurationStore) {
         requireNonNull(bootstrapConfigurationProvider, "bootstrapConfigurationProvider must be defined.");
-        requireNonNull(configurationStore, "configurationStore must be defined.");
+        requireNonNull(configurationStore, "configurationStoreSelector must be defined.");
         return Props.create(BootstrapStackActor.class, bootstrapConfigurationProvider, configurationStore);
     }
 

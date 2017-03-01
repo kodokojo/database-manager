@@ -5,7 +5,11 @@ import io.kodokojo.commons.config.properties.PropertyConfig;
 
 public interface DatabaseConfig extends PropertyConfig {
 
-    @Key(value = "configurationStore.provider", defaultValue = "zookeeper")
-    String configurationStore();
+    @Key(value = "configurationStore.selector", defaultValue = "zookeeper")
+    String configurationStoreSelector();
+
+    @Key(value = "searchEngine.selector", defaultValue = "elasticSearch")
+    String searchEngineSelector();
+
 
 }
