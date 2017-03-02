@@ -43,8 +43,8 @@ public class OrganisationCreatorActor extends AbstractActor {
     }
 
     private void onOrganisationCreateMsg(OrganisationCreateMsg msg) {
-        String entityId = organisationRepository.addOrganisation(msg.organisation);
-        sender().tell(new OrganisationCreatedResultMsg(entityId), self());
+        String organisationId = organisationRepository.addOrganisation(msg.organisation);
+        sender().tell(new OrganisationCreatedResultMsg(organisationId), self());
         getContext().stop(self());
     }
 

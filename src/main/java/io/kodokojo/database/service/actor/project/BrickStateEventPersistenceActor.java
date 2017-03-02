@@ -64,6 +64,7 @@ public class BrickStateEventPersistenceActor extends AbstractActor {
 
     private void onBrickStateChange(BrickStateEventPersistenceMsg msg) {
         BrickStateEvent brickStateEvent = msg.originalEvent().getPayload(BrickStateEvent.class);
+        LOGGER.debug("Receive BrickStateEventPersistenceMsg with following payload : {}", msg.originalEvent().getPayloadAsJsonString() );
         LOGGER.debug("Receive BrickStateEvent for project configuration identifier {}.", brickStateEvent.getProjectConfigurationIdentifier());
         originalSender = sender();
         Project project = projectRepository.getProjectByProjectConfigurationId(brickStateEvent.getProjectConfigurationIdentifier());
@@ -71,37 +72,43 @@ public class BrickStateEventPersistenceActor extends AbstractActor {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Unable to find project configuration id '{}'.", brickStateEvent.getProjectConfigurationIdentifier());
             }
+            originalSender.tell(Boolean.FALSE, self());
+            getContext().stop(self());
+        } else {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Following project may be updated: {}", project);
+            }
+
+            ProjectBuilder builder = new ProjectBuilder(project).setSnapshotDate(new Date());
+            Stack stack = findOrCreateStack(project, brickStateEvent.getStackName());
+            Set<Stack> stacks = new HashSet<>(project.getStacks());
+            Set<BrickStateEvent> brickStateEvents = stack.getBrickStateEvents();
+            Optional<BrickStateEvent> initialBrickStateEvent = brickStateEvents.stream()
+                    .filter(b -> b.getBrickName().equals(brickStateEvent.getBrickName()) &&
+                            b.getBrickType().equals(brickStateEvent.getBrickType()))
+                    .findFirst();
+            String actionLog = "Adding";
+            if (initialBrickStateEvent.isPresent()) {
+                actionLog = "Updating";
+                brickStateEvents.remove(initialBrickStateEvent.get());
+            }
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("{} following state to project {} : {}", actionLog, project.getName(), msg);
+            }
+            brickStateEvents.add(brickStateEvent);
+            stacks.add(stack);
+
+            builder.setStacks(stacks);
+            getContext().actorFor(EndpointActor.ACTOR_PATH).tell(new ProjectUpdaterMessages.ProjectUpdateMsg(null, null, builder.build()), self());
+
+            originalSender.tell(Boolean.TRUE, self());
             getContext().stop(self());
         }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Following project may be updated: {}", project);
-        }
-
-        ProjectBuilder builder = new ProjectBuilder(project).setSnapshotDate(new Date());
-        Stack stack = findOrCreateStack(project, brickStateEvent.getStackName());
-        Set<Stack> stacks = new HashSet<>(project.getStacks());
-        Set<BrickStateEvent> brickStateEvents = stack.getBrickStateEvents();
-        Optional<BrickStateEvent> initialBrickStateEvent = brickStateEvents.stream()
-                .filter(b -> b.getBrickName().equals(brickStateEvent.getBrickName()) &&
-                        b.getBrickType().equals(brickStateEvent.getBrickType()))
-                .findFirst();
-        String actionLog = "Adding";
-        if (initialBrickStateEvent.isPresent()) {
-            actionLog = "Updating";
-            brickStateEvents.remove(initialBrickStateEvent.get());
-        }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("{} following state to project {} : {}", actionLog, project.getName(), msg);
-        }
-        brickStateEvents.add(brickStateEvent);
-        stacks.add(stack);
-
-        builder.setStacks(stacks);
-        getContext().actorFor(EndpointActor.ACTOR_PATH).tell(new ProjectUpdaterMessages.ProjectUpdateMsg(null,null, builder.build()), self());
     }
 
     private void onNotAuthorizedToUpdateProject() {
         LOGGER.error("Unexpected behavior happened when trying to update a project state from an brick state change notification.");
+        originalSender.tell(Boolean.FALSE, self());
         getContext().stop(self());
     }
 

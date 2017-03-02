@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import io.kodokojo.commons.config.AwsConfig;
+import io.kodokojo.commons.config.ElasticSearchConfig;
 import io.kodokojo.commons.config.MarathonConfig;
 import io.kodokojo.commons.config.module.OrchestratorConfig;
 import io.kodokojo.commons.config.properties.PropertyConfig;
