@@ -20,19 +20,16 @@ package io.kodokojo.database;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import com.google.inject.*;
-import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import io.kodokojo.commons.config.MicroServiceConfig;
 import io.kodokojo.commons.config.module.*;
 import io.kodokojo.commons.event.EventBus;
 import io.kodokojo.commons.service.actor.EventToEndpointGateway;
-import io.kodokojo.commons.service.repository.ProjectFetcher;
-import io.kodokojo.database.config.module.AkkaModule;
-import io.kodokojo.database.config.module.EmailModule;
-import io.kodokojo.database.config.module.ZookeeperModule;
+import io.kodokojo.commons.service.healthcheck.HttpHealthCheckEndpoint;
+import io.kodokojo.database.config.DatabaseConfig;
+import io.kodokojo.database.config.module.*;
 import io.kodokojo.database.service.actor.EndpointActor;
 import io.kodokojo.commons.service.lifecycle.ApplicationLifeCycleManager;
-import io.kodokojo.commons.service.repository.UserFetcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,11 +39,24 @@ public class Launcher {
 
     public static void main(String[] args) {
 
+        Injector propertyInjector = Guice.createInjector(new CommonsPropertyModule(args), new PropertyModule());
+        DatabaseConfig databaseConfig = propertyInjector.getInstance(DatabaseConfig.class);
+        AbstractModule configurationStoreModule = new ZookeeperModule();
+        if (databaseConfig.configurationStoreSelector().equals("noop")) {
+            configurationStoreModule = new NoopCongurationStoreModule();
+        }
 
-        Injector propertyInjector = Guice.createInjector(new CommonsPropertyModule(args));
         MicroServiceConfig microServiceConfig = propertyInjector.getInstance(MicroServiceConfig.class);
         LOGGER.info("Starting Kodo Kojo {}.", microServiceConfig.name());
-        Injector servicesInjector = propertyInjector.createChildInjector(new UtilityServiceModule(), new EventBusModule(), new DatabaseModule(), new SecurityModule(), new EmailModule(), new ZookeeperModule());
+        Injector servicesInjector = propertyInjector.createChildInjector(
+                new UtilityServiceModule(),
+                new EventBusModule(),
+                new DatabaseModule(),
+                new SecurityModule(),
+                new EmailModule(),
+                configurationStoreModule,
+                new CommonsHealthCheckModule()
+        );
         Injector akkaInjector = servicesInjector.createChildInjector(new AkkaModule());
         ActorSystem actorSystem = akkaInjector.getInstance(ActorSystem.class);
         ActorRef endpointActor = actorSystem.actorOf(EndpointActor.PROPS(akkaInjector), "endpoint");
@@ -56,19 +66,9 @@ public class Launcher {
                 bind(ActorRef.class).annotatedWith(Names.named(EndpointActor.NAME)).toInstance(endpointActor);
             }
         });
-        Injector injector = akkaInjector.createChildInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-            //
-            }
 
-            @Provides
-            @Singleton
-            EventToEndpointGateway provideEventEventToEndpointGateway(@Named(EndpointActor.NAME) ActorRef akkaEndpoint) {
-                return new EventToEndpointGateway(akkaEndpoint);
-            }
+        Injector injector = akkaInjector.createChildInjector(new AkkaGatewayModule());
 
-        });
         EventBus eventBus = injector.getInstance(EventBus.class);
         EventToEndpointGateway eventToActorGateway = injector.getInstance(EventToEndpointGateway.class);
         eventBus.addEventListener(eventToActorGateway);
@@ -85,9 +85,11 @@ public class Launcher {
         });
         eventBus.connect();
 
+        HttpHealthCheckEndpoint httpHealthCheckEndpoint = injector.getInstance(HttpHealthCheckEndpoint.class);
+        httpHealthCheckEndpoint.start();
+
         LOGGER.info("Kodo Kojo {} started.", microServiceConfig.name());
 
     }
-
 
 }

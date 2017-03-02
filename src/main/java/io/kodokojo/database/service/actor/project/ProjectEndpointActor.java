@@ -44,7 +44,7 @@ public class ProjectEndpointActor extends AbstractActor {
                               ConfigurationStore configurationStore) {
         requireNonNull(projectRepository, "projectRepository must be defined.");
         requireNonNull(brickFactory, "brickFactory must be defined.");
-        requireNonNull(configurationStore, "configurationStore must be defined.");
+        requireNonNull(configurationStore, "configurationStoreSelector must be defined.");
         requireNonNull(bootstrapConfigurationProvider, "bootstrapConfigurationProvider must be defined.");
 
         return Props.create(ProjectEndpointActor.class, projectRepository, brickFactory, bootstrapConfigurationProvider, configurationStore);

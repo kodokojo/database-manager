@@ -73,11 +73,11 @@ public class RedisProjectStoreIntTest implements DockerTestApplicationBuilder {
     public void add_valid_entity() throws NoSuchAlgorithmException {
         Entity entity = new Entity("MaBoite", true, new User("12345", "Jean-Pascal THIERY", "jpthiery", "jpthiery@xebia.fr", "jpthiery", "an SSH key"));
 
-        String identifier = redisProjectStore.addEntity(entity);
+        String identifier = redisProjectStore.addOrganisation(entity);
 
         assertThat(identifier).isNotEmpty();
 
-        Entity result = redisProjectStore.getEntityById(identifier);
+        Entity result = redisProjectStore.getOrganisationById(identifier);
 
         assertThat(result).isNotNull();
         assertThat(result.getIdentifier()).isEqualTo(identifier);

@@ -28,15 +28,14 @@ import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 import io.kodokojo.commons.service.repository.ProjectRepository;
 
 import static akka.event.Logging.getLogger;
+import static java.util.Objects.requireNonNull;
 
 public class ProjectConfigurationUpdaterActor extends AbstractActor {
 
     private final LoggingAdapter LOGGER = getLogger(getContext().system(), this);
 
     public static final Props PROPS(ProjectRepository projectRepository) {
-        if (projectRepository == null) {
-            throw new IllegalArgumentException("projectRepository must be defined.");
-        }
+        requireNonNull(projectRepository, "projectRepository must be defined.");
         return Props.create(ProjectConfigurationUpdaterActor.class, projectRepository);
     }
 

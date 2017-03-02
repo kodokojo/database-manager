@@ -61,8 +61,9 @@ public class ProjectConfigurationDtoCreatorActor extends AbstractActor {
             LOGGER.debug("Receive a projectConfiguration to add to store.");
             Try<ProjectConfiguration> projectConfiguration = msg.getProjectConfiguration();
             if (projectConfiguration.isSuccess()) {
-                String projectConfigurationId = projectRepository.addProjectConfiguration(projectConfiguration.get());
-                originalSender.tell(new ProjectConfigurationDtoCreateResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), projectConfigurationId, initialMsg.projectConfigDto.getName()), self());
+                ProjectConfiguration projectConfiguration1 = projectConfiguration.get();
+                String projectConfigurationId = projectRepository.addProjectConfiguration(projectConfiguration1);
+                originalSender.tell(new ProjectConfigurationDtoCreateResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), projectConfiguration1.getEntityIdentifier(), projectConfigurationId, initialMsg.projectConfigDto.getName()), self());
             } else {
                 //originalSender.tell(new ProjectConfigurationDtoCreateFailResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), initialMsg.projectConfigDto.getName(), projectConfiguration.getCause()), self());
                 LOGGER.error("Unable to create project {} , sending failed reason to original sender.", initialMsg.projectConfigDto.getName() );
@@ -99,16 +100,22 @@ public class ProjectConfigurationDtoCreatorActor extends AbstractActor {
 
     public static class ProjectConfigurationDtoCreateResultMsg extends EventUserReplyMessage {
 
+        private final String organisationId;
+
         private final String projectConfigurationId;
 
         private final String projectName;
 
-        public ProjectConfigurationDtoCreateResultMsg(User requester, Event request, String projectConfigurationId, String projectName) {
+        public ProjectConfigurationDtoCreateResultMsg(User requester, Event request, String organisationId, String projectConfigurationId, String projectName) {
             super(requester, request, Event.PROJECTCONFIG_CREATION_REPLY, projectConfigurationId);
+            this.organisationId = organisationId;
             this.projectConfigurationId = projectConfigurationId;
             this.projectName = projectName;
         }
 
+        public String getOrganisationId() {
+            return organisationId;
+        }
 
         public String getProjectConfigurationId() {
             return projectConfigurationId;

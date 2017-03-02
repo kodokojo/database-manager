@@ -26,12 +26,12 @@ import io.kodokojo.commons.RSAUtils;
 import io.kodokojo.commons.config.ApplicationConfig;
 import io.kodokojo.commons.event.Event;
 import io.kodokojo.commons.event.payload.UserCreationReply;
-import io.kodokojo.commons.model.Entity;
+import io.kodokojo.commons.model.Organisation;
 import io.kodokojo.commons.model.User;
 import io.kodokojo.commons.model.UserInWaitingList;
 import io.kodokojo.database.service.actor.EndpointActor;
-import io.kodokojo.database.service.actor.entity.EntityCreatorActor;
-import io.kodokojo.database.service.actor.entity.EntityMessage;
+import io.kodokojo.database.service.actor.organisation.OrganisationCreatorActor;
+import io.kodokojo.database.service.actor.organisation.OrganisationMessage;
 import io.kodokojo.commons.service.EmailSender;
 import io.kodokojo.commons.service.actor.EmailSenderActor;
 import io.kodokojo.commons.service.actor.message.EventUserReplyMessage;
@@ -72,6 +72,8 @@ public class UserCreatorActor extends AbstractActor {
 
     private String entityId;
 
+    private boolean addUserToOrganisation;
+
     private EventUserCreateMsg message;
 
     private ActorRef originalActor;
@@ -79,8 +81,9 @@ public class UserCreatorActor extends AbstractActor {
     public UserCreatorActor(UserRepository userRepository, ApplicationConfig applicationConfig) {
         this.userRepository = userRepository;
         this.applicationConfig = applicationConfig;
+        addUserToOrganisation = false;
         receive(ReceiveBuilder.match(EventUserCreateMsg.class, this::onCreateUserRequest)
-                .match(EntityCreatorActor.EntityCreatedResultMsg.class, this::onEntityCreated)
+                .match(OrganisationCreatorActor.OrganisationCreatedResultMsg.class, this::onEntityCreated)
                 .match(UserEligibleActor.UserEligibleResultMsg.class, this::onUserIsEligible)
                 .match(UserGenerateSecurityData.UserSecurityDataMsg.class, this::onSecurityDataGenerated)
                 .build()
@@ -102,8 +105,8 @@ public class UserCreatorActor extends AbstractActor {
             getContext().actorOf(UserGenerateSecurityData.PROPS()).tell(new UserGenerateSecurityData.GenerateSecurityMsg(), self());
             getContext().actorOf(UserEligibleActor.PROPS(userRepository)).tell(u, self());
             if (StringUtils.isBlank(u.entityId)) {
-                Entity entity = new Entity(u.email);
-                getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new EntityCreatorActor.EntityCreateMsg(entity), self());
+                Organisation organisation = new Organisation(u.email);
+                getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationCreatorActor.OrganisationCreateMsg(organisation), self());
 
             } else {
                 entityId = u.entityId;
@@ -127,9 +130,9 @@ public class UserCreatorActor extends AbstractActor {
         }
     }
 
-    private void onEntityCreated(EntityCreatorActor.EntityCreatedResultMsg msg) {
-        entityId = msg.getEntityId();
-        getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new EntityMessage.AddUserToEntityMsg(null, message.originalEvent(), message.id, entityId), self());
+    private void onEntityCreated(OrganisationCreatorActor.OrganisationCreatedResultMsg msg) {
+        entityId = msg.getOrganisationId();
+        getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationMessage.AddUserToOrganisationMsg(null, message.originalEvent(), message.id, entityId, true), self());
         isReadyToStore();
     }
 
@@ -137,6 +140,7 @@ public class UserCreatorActor extends AbstractActor {
         if (isValid && keyPair != null && StringUtils.isNotBlank(password) && StringUtils.isNotBlank(entityId)) {
             User user = new User(message.id, entityId, message.username, message.username, message.email, password, RSAUtils.encodePublicKey((RSAPublicKey) keyPair.getPublic(), message.email));
             boolean added = userRepository.addUser(user);
+            getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationMessage.AddUserToOrganisationMsg(message.getRequester(), message.originalEvent(), message.id, entityId, false), self());
             if (added) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("User {} successfully created.", message.getUsername());
