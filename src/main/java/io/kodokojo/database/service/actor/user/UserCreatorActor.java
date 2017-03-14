@@ -1,17 +1,17 @@
 /**
  * Kodo Kojo - Microservice which allow to access to Database.
  * Copyright © 2017 Kodo Kojo (infos@kodokojo.io)
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -29,14 +29,14 @@ import io.kodokojo.commons.event.payload.UserCreationReply;
 import io.kodokojo.commons.model.Organisation;
 import io.kodokojo.commons.model.User;
 import io.kodokojo.commons.model.UserInWaitingList;
-import io.kodokojo.database.service.actor.EndpointActor;
-import io.kodokojo.database.service.actor.organisation.OrganisationCreatorActor;
-import io.kodokojo.database.service.actor.organisation.OrganisationMessage;
 import io.kodokojo.commons.service.EmailSender;
 import io.kodokojo.commons.service.actor.EmailSenderActor;
 import io.kodokojo.commons.service.actor.message.EventUserReplyMessage;
 import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 import io.kodokojo.commons.service.repository.UserRepository;
+import io.kodokojo.database.service.actor.EndpointActor;
+import io.kodokojo.database.service.actor.organisation.OrganisationCreatorActor;
+import io.kodokojo.database.service.actor.organisation.OrganisationMessage;
 import org.apache.commons.lang.StringUtils;
 
 import java.security.KeyPair;
@@ -106,7 +106,7 @@ public class UserCreatorActor extends AbstractActor {
             getContext().actorOf(UserEligibleActor.PROPS(userRepository)).tell(u, self());
             if (StringUtils.isBlank(u.entityId)) {
                 Organisation organisation = new Organisation(u.email);
-                getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationCreatorActor.OrganisationCreateMsg(organisation), self());
+                getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationCreatorActor.OrganisationCreateMsg(u.getRequester(), u.originalEvent(), organisation, false), self());
 
             } else {
                 entityId = u.entityId;
@@ -185,11 +185,11 @@ public class UserCreatorActor extends AbstractActor {
         private final boolean comeFromEventBus;
 
         public EventUserCreateMsg(User requester, Event request, String id, String email, String username, String entityId, boolean isRoot) {
-            this(requester, request, id, email, username, entityId, isRoot,false);
+            this(requester, request, id, email, username, entityId, isRoot, false);
         }
 
         public EventUserCreateMsg(User requester, Event request, String id, String email, String username, String entityId, boolean isRoot, boolean comeFromEventBus) {
-            super(requester,request);
+            super(requester, request);
             this.isRoot = isRoot;
             if (isBlank(id)) {
                 throw new IllegalArgumentException("id must be defined.");
@@ -236,7 +236,7 @@ public class UserCreatorActor extends AbstractActor {
 
         private final KeyPair keyPair;
 
-        public UserCreateResultMsg(User requester,Event request, User user, KeyPair keyPair) {
+        public UserCreateResultMsg(User requester, Event request, User user, KeyPair keyPair) {
             super(requester, request, Event.USER_CREATION_REPLY, new UserCreationReply(user.getIdentifier(), keyPair, user.getEmail(), false, true));
             if (keyPair == null) {
                 throw new IllegalArgumentException("keyPair must be defined.");
@@ -258,7 +258,7 @@ public class UserCreatorActor extends AbstractActor {
 
         private final UserInWaitingList userInWaitingList;
 
-        public UserInWaitinglistResultMsg(User requester,Event request, UserInWaitingList userInWaitingList) {
+        public UserInWaitinglistResultMsg(User requester, Event request, UserInWaitingList userInWaitingList) {
             super(requester, request, Event.USER_CREATION_REPLY, new UserCreationReply(null, null, userInWaitingList.getEmail(), true, true));
             this.userInWaitingList = userInWaitingList;
         }

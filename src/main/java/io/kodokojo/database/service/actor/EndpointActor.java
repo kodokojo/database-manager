@@ -33,10 +33,7 @@ import io.kodokojo.commons.event.payload.ProjectConfigurationChangeUserRequest;
 import io.kodokojo.commons.event.payload.ProjectConfigurationCreated;
 import io.kodokojo.commons.event.payload.UserCreated;
 import io.kodokojo.commons.event.payload.UserCreationRequest;
-import io.kodokojo.commons.model.BrickConfigurerData;
-import io.kodokojo.commons.model.Project;
-import io.kodokojo.commons.model.TypeChange;
-import io.kodokojo.commons.model.User;
+import io.kodokojo.commons.model.*;
 import io.kodokojo.commons.service.EmailSender;
 import io.kodokojo.commons.service.actor.AbstractEventEndpointActor;
 import io.kodokojo.commons.service.actor.EmailSenderActor;
@@ -108,7 +105,11 @@ public class EndpointActor extends AbstractEventEndpointActor {
                 msg = new ProjectCreatorActor.ProjectCreateMsg(requester, event, project, project.getProjectConfigurationIdentifier(), true);
                 actorRef = projectEndpoint;
                 break;
-
+            case Event.ORGANISATION_CREATE_REQUEST:
+                String name = event.getPayload(String.class);
+                Organisation organisation = new Organisation(name);
+                msg = new OrganisationCreatorActor.OrganisationCreateMsg(requester, event, organisation);
+                break;
             case Event.BRICK_STATE_UPDATE:
                 msg = new BrickStateEventPersistenceActor.BrickStateEventPersistenceMsg(requester, event);
                 actorRef = projectEndpoint;
@@ -131,6 +132,7 @@ public class EndpointActor extends AbstractEventEndpointActor {
                         brickConfigurerData.getContext()
                 );
                 break;
+
             default:
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Not recognize event type '{}' from following event, drop it : {}", event.getEventType(), Event.convertToJson(event));
@@ -212,6 +214,15 @@ public class EndpointActor extends AbstractEventEndpointActor {
             eventBuilder.setEventType(Event.PROJECTCONFIG_CREATION_EVENT)
                     .copyCustomHeader(msg.originalEvent(), Event.REQUESTER_ID_CUSTOM_HEADER)
                     .setPayload(new ProjectConfigurationCreated(createResultMsg.getProjectConfigurationId(), createResultMsg.getProjectName()));
+            eventBus.send(eventBuilder.build());
+        } else if (msg instanceof OrganisationCreatorActor.OrganisationCreatedResultMsg) {
+            OrganisationCreatorActor.OrganisationCreatedResultMsg organisationCreatedResultMsg = (OrganisationCreatorActor.OrganisationCreatedResultMsg) msg;
+            EventBuilder eventBuilder = eventBuilderFactory.create();
+            String organisationId = organisationCreatedResultMsg.getOrganisationId();
+            eventBuilder
+                    .setEventType(Event.ORGANISATION_CREATED)
+                    .addCustomHeader(Event.ORGANISATION_ID_CUSTOM_HEADER, organisationId)
+                    .setPayload(organisationId);
             eventBus.send(eventBuilder.build());
         }
     }
