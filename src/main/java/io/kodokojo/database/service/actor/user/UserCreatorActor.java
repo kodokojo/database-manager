@@ -140,7 +140,7 @@ public class UserCreatorActor extends AbstractActor {
         if (isValid && keyPair != null && StringUtils.isNotBlank(password) && StringUtils.isNotBlank(entityId)) {
             User user = new User(message.id, entityId, message.username, message.username, message.email, password, RSAUtils.encodePublicKey((RSAPublicKey) keyPair.getPublic(), message.email));
             boolean added = userRepository.addUser(user);
-            getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationMessage.AddUserToOrganisationMsg(message.getRequester(), message.originalEvent(), message.id, entityId, false), self());
+            getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationMessage.AddUserToOrganisationMsg(message.getRequester(), message.originalEvent(), message.id, entityId, message.isRoot), self());
             if (added) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("User {} successfully created.", message.getUsername());
@@ -180,14 +180,17 @@ public class UserCreatorActor extends AbstractActor {
 
         protected final String entityId;
 
+        protected final boolean isRoot;
+
         private final boolean comeFromEventBus;
 
-        public EventUserCreateMsg(User requester, Event request, String id, String email, String username, String entityId) {
-            this(requester, request, id, email, username, entityId, false);
+        public EventUserCreateMsg(User requester, Event request, String id, String email, String username, String entityId, boolean isRoot) {
+            this(requester, request, id, email, username, entityId, isRoot,false);
         }
 
-        public EventUserCreateMsg(User requester, Event request, String id, String email, String username, String entityId, boolean comeFromEventBus) {
+        public EventUserCreateMsg(User requester, Event request, String id, String email, String username, String entityId, boolean isRoot, boolean comeFromEventBus) {
             super(requester,request);
+            this.isRoot = isRoot;
             if (isBlank(id)) {
                 throw new IllegalArgumentException("id must be defined.");
             }

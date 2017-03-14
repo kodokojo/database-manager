@@ -11,5 +11,10 @@ public interface DatabaseConfig extends PropertyConfig {
     @Key(value = "searchEngine.selector", defaultValue = "elasticSearch")
     String searchEngineSelector();
 
+    @Key(value = "root.username", defaultValue = "root")
+    String rootUsername();
+
+    @Key(value = "root.username", defaultValue = "root1234")
+    String rootPassword();
 
 }
