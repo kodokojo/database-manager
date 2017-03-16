@@ -85,7 +85,7 @@ public class EndpointActor extends AbstractEventEndpointActor {
                 break;
             case Event.USER_CREATION_REQUEST:
                 UserCreationRequest creationRequest = event.getPayload(UserCreationRequest.class);
-                msg = new UserCreatorActor.EventUserCreateMsg(requester, event, creationRequest.getId(), creationRequest.getEmail(), creationRequest.getUsername(), creationRequest.getEntityId(), true);
+                msg = new UserCreatorActor.EventUserCreateMsg(requester, event, creationRequest.getId(), creationRequest.getEmail(), creationRequest.getUsername(), creationRequest.getOrganisationId(), true);
                 actorRef = userEndpoint;
                 break;
             case Event.USER_UPDATE_REQUEST:
