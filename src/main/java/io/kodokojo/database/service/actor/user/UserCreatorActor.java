@@ -70,7 +70,7 @@ public class UserCreatorActor extends AbstractActor {
 
     private String password = "";
 
-    private String entityId;
+    private String organisationId;
 
     private boolean addUserToOrganisation;
 
@@ -109,7 +109,7 @@ public class UserCreatorActor extends AbstractActor {
                 getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationCreatorActor.OrganisationCreateMsg(u.getRequester(), u.originalEvent(), organisation, false), self());
 
             } else {
-                entityId = u.entityId;
+                organisationId = u.entityId;
             }
         }
     }
@@ -131,16 +131,17 @@ public class UserCreatorActor extends AbstractActor {
     }
 
     private void onEntityCreated(OrganisationCreatorActor.OrganisationCreatedResultMsg msg) {
-        entityId = msg.getOrganisationId();
-        getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationMessage.AddUserToOrganisationMsg(null, message.originalEvent(), message.id, entityId, true), self());
+        organisationId = msg.getOrganisationId();
+        getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationMessage.AddUserToOrganisationMsg(null, message.originalEvent(), message.id, organisationId, true), self());
         isReadyToStore();
     }
 
     private void isReadyToStore() {
-        if (isValid && keyPair != null && StringUtils.isNotBlank(password) && StringUtils.isNotBlank(entityId)) {
-            User user = new User(message.id, entityId, message.username, message.username, message.email, password, RSAUtils.encodePublicKey((RSAPublicKey) keyPair.getPublic(), message.email));
+        if (isValid && keyPair != null && StringUtils.isNotBlank(password) && StringUtils.isNotBlank(organisationId)) {
+            String encodePublicKey = RSAUtils.encodePublicKey((RSAPublicKey) keyPair.getPublic(), message.email);
+            User user = new User(message.id, organisationId, message.username, message.username, message.email, password, encodePublicKey, message.isRoot);
             boolean added = userRepository.addUser(user);
-            getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationMessage.AddUserToOrganisationMsg(message.getRequester(), message.originalEvent(), message.id, entityId, message.isRoot), self());
+            getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationMessage.AddUserToOrganisationMsg(message.getRequester(), message.originalEvent(), message.id, organisationId, message.isRoot), self());
             if (added) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("User {} successfully created.", message.getUsername());

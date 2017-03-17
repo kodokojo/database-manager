@@ -85,7 +85,7 @@ public class EndpointActor extends AbstractEventEndpointActor {
                 break;
             case Event.USER_CREATION_REQUEST:
                 UserCreationRequest creationRequest = event.getPayload(UserCreationRequest.class);
-                msg = new UserCreatorActor.EventUserCreateMsg(requester, event, creationRequest.getId(), creationRequest.getEmail(), creationRequest.getUsername(), creationRequest.getOrganisationId(), true);
+                msg = new UserCreatorActor.EventUserCreateMsg(requester, event, creationRequest.getId(), creationRequest.getEmail(), creationRequest.getUsername(), creationRequest.getOrganisationId(), creationRequest.isRoot());
                 actorRef = userEndpoint;
                 break;
             case Event.USER_UPDATE_REQUEST:
@@ -194,36 +194,38 @@ public class EndpointActor extends AbstractEventEndpointActor {
 
     @Override
     protected void onEventReplyableMessagePostReply(EventReplyableMessage msg, EventBuilderFactory eventBuilderFactory) {
-        if (msg instanceof UserCreatorActor.UserCreateResultMsg) {
-            UserCreatorActor.UserCreateResultMsg createResultMsg = (UserCreatorActor.UserCreateResultMsg) msg;
-            User user = createResultMsg.getUser();
-            EventBuilder eventBuilder = eventBuilderFactory.create()
-                    .setEventType(Event.USER_CREATION_EVENT)
-                    .copyCustomHeader(msg.originalEvent(), Event.REQUESTER_ID_CUSTOM_HEADER)
-                    .addCustomHeader(Event.ORGANISATION_ID_CUSTOM_HEADER, user.getOrganisationIds().iterator().next())
-                    .setPayload(new UserCreated(user.getIdentifier(), user.getUsername(), user.getEmail()));
+        if (msg.originalEvent() != null) {
+            if (msg instanceof UserCreatorActor.UserCreateResultMsg) {
+                UserCreatorActor.UserCreateResultMsg createResultMsg = (UserCreatorActor.UserCreateResultMsg) msg;
+                User user = createResultMsg.getUser();
+                EventBuilder eventBuilder = eventBuilderFactory.create()
+                        .setEventType(Event.USER_CREATION_EVENT)
+                        .copyCustomHeader(msg.originalEvent(), Event.REQUESTER_ID_CUSTOM_HEADER)
+                        .addCustomHeader(Event.ORGANISATION_ID_CUSTOM_HEADER, user.getOrganisationIds().iterator().next())
+                        .setPayload(new UserCreated(user.getIdentifier(), user.getUsername(), user.getEmail()));
 
-            eventBus.send(eventBuilder.build());
-        } else if (msg instanceof ProjectConfigurationDtoCreatorActor.ProjectConfigurationDtoCreateResultMsg) {
-            ProjectConfigurationDtoCreatorActor.ProjectConfigurationDtoCreateResultMsg createResultMsg = (ProjectConfigurationDtoCreatorActor.ProjectConfigurationDtoCreateResultMsg) msg;
-            EventBuilder eventBuilder = eventBuilderFactory.create();
-            User user = createResultMsg.getRequester();
-            if (user != null) {
-                eventBuilder.addCustomHeader(Event.ORGANISATION_ID_CUSTOM_HEADER, createResultMsg.getOrganisationId());
+                eventBus.send(eventBuilder.build());
+            } else if (msg instanceof ProjectConfigurationDtoCreatorActor.ProjectConfigurationDtoCreateResultMsg) {
+                ProjectConfigurationDtoCreatorActor.ProjectConfigurationDtoCreateResultMsg createResultMsg = (ProjectConfigurationDtoCreatorActor.ProjectConfigurationDtoCreateResultMsg) msg;
+                EventBuilder eventBuilder = eventBuilderFactory.create();
+                User user = createResultMsg.getRequester();
+                if (user != null) {
+                    eventBuilder.addCustomHeader(Event.ORGANISATION_ID_CUSTOM_HEADER, createResultMsg.getOrganisationId());
+                }
+                eventBuilder.setEventType(Event.PROJECTCONFIG_CREATION_EVENT)
+                        .copyCustomHeader(msg.originalEvent(), Event.REQUESTER_ID_CUSTOM_HEADER)
+                        .setPayload(new ProjectConfigurationCreated(createResultMsg.getProjectConfigurationId(), createResultMsg.getProjectName()));
+                eventBus.send(eventBuilder.build());
+            } else if (msg instanceof OrganisationCreatorActor.OrganisationCreatedResultMsg) {
+                OrganisationCreatorActor.OrganisationCreatedResultMsg organisationCreatedResultMsg = (OrganisationCreatorActor.OrganisationCreatedResultMsg) msg;
+                EventBuilder eventBuilder = eventBuilderFactory.create();
+                String organisationId = organisationCreatedResultMsg.getOrganisationId();
+                eventBuilder
+                        .setEventType(Event.ORGANISATION_CREATED)
+                        .addCustomHeader(Event.ORGANISATION_ID_CUSTOM_HEADER, organisationId)
+                        .setPayload(organisationId);
+                eventBus.send(eventBuilder.build());
             }
-            eventBuilder.setEventType(Event.PROJECTCONFIG_CREATION_EVENT)
-                    .copyCustomHeader(msg.originalEvent(), Event.REQUESTER_ID_CUSTOM_HEADER)
-                    .setPayload(new ProjectConfigurationCreated(createResultMsg.getProjectConfigurationId(), createResultMsg.getProjectName()));
-            eventBus.send(eventBuilder.build());
-        } else if (msg instanceof OrganisationCreatorActor.OrganisationCreatedResultMsg) {
-            OrganisationCreatorActor.OrganisationCreatedResultMsg organisationCreatedResultMsg = (OrganisationCreatorActor.OrganisationCreatedResultMsg) msg;
-            EventBuilder eventBuilder = eventBuilderFactory.create();
-            String organisationId = organisationCreatedResultMsg.getOrganisationId();
-            eventBuilder
-                    .setEventType(Event.ORGANISATION_CREATED)
-                    .addCustomHeader(Event.ORGANISATION_ID_CUSTOM_HEADER, organisationId)
-                    .setPayload(organisationId);
-            eventBus.send(eventBuilder.build());
         }
     }
 
