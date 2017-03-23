@@ -109,6 +109,7 @@ public class EndpointActor extends AbstractEventEndpointActor {
                 String name = event.getPayload(String.class);
                 Organisation organisation = new Organisation(name);
                 msg = new OrganisationCreatorActor.OrganisationCreateMsg(requester, event, organisation);
+                actorRef = organisationEndpoint;
                 break;
             case Event.BRICK_STATE_UPDATE:
                 msg = new BrickStateEventPersistenceActor.BrickStateEventPersistenceMsg(requester, event);

@@ -42,6 +42,7 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -100,6 +101,28 @@ public class RedisUserRepositoryIntTest {
         User user = userRepository.getUserByUsername("jpthiery");
 
         assertThat(user).isNotNull();
+    }
+
+    @Test
+    @DockerIsRequire
+    public void add_root() {
+
+        UserRepository userRepository = new RedisUserRepository(aesKey, redisHost, redisPort, null);
+
+        String email = "jpthiery@xebia.fr";
+        User jpthiery = new User(userRepository.generateId(), "1234","Jean-Pascal THIERY", "jpthiery", email, "jpascal", RSAUtils.encodePublicKey((RSAPublicKey) keyPair.getPublic(), email), true);
+
+        userRepository.addUser(jpthiery);
+
+        User user = userRepository.getUserByUsername("jpthiery");
+
+        Set<User> rootUsers = userRepository.getRootUsers();
+
+        assertThat(user).isNotNull();
+        assertThat(user.isRoot()).isTrue();
+
+        assertThat(rootUsers).isNotEmpty();
+        assertThat(rootUsers.iterator().next().getIdentifier()).isEqualTo(user.getIdentifier());
     }
 
     @Test

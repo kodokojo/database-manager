@@ -27,6 +27,7 @@ import io.kodokojo.commons.service.BrickFactory;
 import io.kodokojo.commons.service.repository.ProjectRepository;
 import io.kodokojo.database.service.BootstrapConfigurationProvider;
 import io.kodokojo.database.service.ConfigurationStore;
+import io.kodokojo.database.service.actor.organisation.OrganisationCreatorActor;
 import scala.concurrent.duration.Duration;
 
 import java.util.concurrent.TimeUnit;
