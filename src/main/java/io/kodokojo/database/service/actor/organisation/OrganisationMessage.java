@@ -28,20 +28,20 @@ public interface OrganisationMessage {
 
         protected final String userId;
 
-        protected final String entityId;
+        protected final String organisationId;
 
         protected final boolean admin;
 
-        public AddUserToOrganisationMsg(User requester, Event request, String userId, String entityId, boolean admin) {
+        public AddUserToOrganisationMsg(User requester, Event request, String userId, String organisationId, boolean admin) {
             super(requester, request);
             if (isBlank(userId)) {
                 throw new IllegalArgumentException("userId must be defined.");
             }
-            if (isBlank(entityId)) {
+            if (isBlank(organisationId)) {
                 throw new IllegalArgumentException("entityId must be defined.");
             }
             this.userId = userId;
-            this.entityId = entityId;
+            this.organisationId = organisationId;
             this.admin = admin;
         }
     }

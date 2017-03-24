@@ -19,7 +19,9 @@ package io.kodokojo.database.service.actor.organisation;
 
 import akka.actor.AbstractActor;
 import akka.actor.Props;
+import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
+import akka.pattern.Patterns;
 import io.kodokojo.commons.event.Event;
 import io.kodokojo.commons.event.payload.OrganisationCreationReply;
 import io.kodokojo.commons.model.Organisation;
@@ -27,10 +29,19 @@ import io.kodokojo.commons.model.User;
 import io.kodokojo.commons.service.actor.message.EventUserReplyMessage;
 import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 import io.kodokojo.commons.service.repository.OrganisationRepository;
+import io.kodokojo.database.service.actor.EndpointActor;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 
+import java.util.concurrent.TimeUnit;
+
+import static akka.event.Logging.getLogger;
 import static java.util.Objects.requireNonNull;
 
 public class OrganisationCreatorActor extends AbstractActor {
+
+    private final LoggingAdapter LOGGER = getLogger(getContext().system(), this);
 
     private final OrganisationRepository organisationRepository;
 
@@ -49,11 +60,24 @@ public class OrganisationCreatorActor extends AbstractActor {
 
     private void onOrganisationCreateMsg(OrganisationCreateMsg msg) {
         Organisation organisation = organisationRepository.getOrganisationByName(msg.organisation.getName());
-        if (organisation == null) {
-            String organisationId = organisationRepository.addOrganisation(msg.organisation);
-            sender().tell(new OrganisationCreatedResultMsg(msg.getRequester(), msg.originalEvent(), organisationId, false), self());
+        User requester = msg.getRequester();
+        if (requester == null) {
+            LOGGER.error("Trying to create organisation {} from unknown requester.", organisation.getName());
         } else {
-            sender().tell(new OrganisationCreatedResultMsg(msg.getRequester(), msg.originalEvent(), organisation.getIdentifier(), true), self());
+            if (organisation == null) {
+                String organisationId = organisationRepository.addOrganisation(msg.organisation);
+                OrganisationMessage.AddUserToOrganisationMsg addUserToOrganisationMsg = new OrganisationMessage.AddUserToOrganisationMsg(requester, msg.originalEvent(), requester.getIdentifier(), organisationId, requester.isRoot());
+                getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(addUserToOrganisationMsg, self());
+                Future<Object> future = Patterns.ask(getContext().actorSelection(EndpointActor.ACTOR_PATH), addUserToOrganisationMsg, 1000);
+                try {
+                    Await.result(future, Duration.apply(10, TimeUnit.SECONDS));
+                    sender().tell(new OrganisationCreatedResultMsg(requester, msg.originalEvent(), organisationId, false), self());
+                } catch (Exception e) {
+                    LOGGER.error("Unable to add user {} to organisation {}.", requester.getUsername(), msg.organisation.getName());
+                }
+            } else {
+                sender().tell(new OrganisationCreatedResultMsg(requester, msg.originalEvent(), organisation.getIdentifier(), true), self());
+            }
         }
         getContext().stop(self());
     }

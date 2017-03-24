@@ -26,10 +26,10 @@ import static java.util.Objects.requireNonNull;
 
 public class AddUserToOrganisationActor extends AbstractActor {
 
-    private final OrganisationRepository entityRepository;
+    private final OrganisationRepository organisationRepository;
 
-    public AddUserToOrganisationActor(OrganisationRepository entityRepository) {
-        this.entityRepository = entityRepository;
+    public AddUserToOrganisationActor(OrganisationRepository organisationRepository) {
+        this.organisationRepository = organisationRepository;
 
         receive(ReceiveBuilder
                 .match(OrganisationMessage.AddUserToOrganisationMsg.class, this::onAddUserToEntityMesg)
@@ -38,7 +38,12 @@ public class AddUserToOrganisationActor extends AbstractActor {
     }
 
     private void onAddUserToEntityMesg(OrganisationMessage.AddUserToOrganisationMsg msg) {
-        entityRepository.addUserToOrganisation(msg.userId, msg.entityId);
+        if (msg.admin) {
+            organisationRepository.addAdminToOrganisation(msg.userId, msg.organisationId);
+        } else {
+            organisationRepository.addUserToOrganisation(msg.userId, msg.organisationId);
+        }
+        sender().tell(Boolean.TRUE, self());
         getContext().stop(self());
     }
 
