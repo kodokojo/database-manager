@@ -45,7 +45,7 @@ public class ProjectConfigurationDtoCreatorActor extends AbstractActor {
     public static Props PROPS(ProjectRepository projectRepository, OrganisationRepository organisationRepository) {
         requireNonNull(projectRepository, "projectRepository must be defined.");
         requireNonNull(organisationRepository, "organisationRepository must be defined.");
-        return Props.create(ProjectConfigurationDtoCreatorActor.class, projectRepository);
+        return Props.create(ProjectConfigurationDtoCreatorActor.class, projectRepository, organisationRepository);
     }
 
     private ActorRef originalSender;
