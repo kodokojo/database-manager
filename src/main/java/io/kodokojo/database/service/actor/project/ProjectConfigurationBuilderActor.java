@@ -181,7 +181,8 @@ public class ProjectConfigurationBuilderActor extends AbstractActor {
             }).collect(Collectors.toSet());
 
 
-            ProjectConfiguration projectConfiguration = new ProjectConfiguration(requester.getOrganisationIds().iterator().next(), projectConfigurationCreationDto.getName(), userService, new ArrayList<>(admins), stackConfiguration, new ArrayList<>(users));
+            String organisationIdentifier = initialMsg.projectConfigurationCreationDto.getOrganisationIdentifier();
+            ProjectConfiguration projectConfiguration = new ProjectConfiguration(organisationIdentifier, projectConfigurationCreationDto.getName(), userService, new ArrayList<>(admins), stackConfiguration, new ArrayList<>(users));
             originalSender.tell(new ProjectConfigurationBuildResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), projectConfiguration), self());
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Return a built ProjectConfiguration for project {} to actor {}.", initialMsg.getProjectConfigurationCreationDto().getName(), originalSender);

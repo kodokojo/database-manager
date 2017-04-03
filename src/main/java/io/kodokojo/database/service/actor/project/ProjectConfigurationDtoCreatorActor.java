@@ -64,6 +64,7 @@ public class ProjectConfigurationDtoCreatorActor extends AbstractActor {
             Try<ProjectConfiguration> projectConfiguration = msg.getProjectConfiguration();
             if (projectConfiguration.isSuccess()) {
                 ProjectConfiguration projectConfiguration1 = projectConfiguration.get();
+                projectRepository.addProjectConfiguration(projectConfiguration1);
                 Organisation organisation = organisationRepository.getOrganisationById(projectConfiguration1.getEntityIdentifier());
                 organisation.addProjectConfiguration(projectConfiguration1);
                 organisationRepository.addProjectConfigurationToOrganisation(projectConfiguration1.getEntityIdentifier(), projectConfiguration1.getIdentifier());
