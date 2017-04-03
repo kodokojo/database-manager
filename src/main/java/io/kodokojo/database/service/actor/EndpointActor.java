@@ -29,11 +29,9 @@ import io.kodokojo.commons.dto.UserUpdateDto;
 import io.kodokojo.commons.event.Event;
 import io.kodokojo.commons.event.EventBuilder;
 import io.kodokojo.commons.event.EventBuilderFactory;
-import io.kodokojo.commons.event.payload.ProjectConfigurationChangeUserRequest;
-import io.kodokojo.commons.event.payload.ProjectConfigurationCreated;
-import io.kodokojo.commons.event.payload.UserCreated;
-import io.kodokojo.commons.event.payload.UserCreationRequest;
+import io.kodokojo.commons.event.payload.*;
 import io.kodokojo.commons.model.*;
+import io.kodokojo.commons.model.TypeChange;
 import io.kodokojo.commons.service.EmailSender;
 import io.kodokojo.commons.service.actor.AbstractEventEndpointActor;
 import io.kodokojo.commons.service.actor.EmailSenderActor;
@@ -111,6 +109,14 @@ public class EndpointActor extends AbstractEventEndpointActor {
                 msg = new OrganisationCreatorActor.OrganisationCreateMsg(requester, event, organisation);
                 actorRef = organisationEndpoint;
                 break;
+            case Event.ORGANISATION_CHANGE_ADMIN_REQUEST:
+                OrganisationChangeUserRequest payload = event.getPayload(OrganisationChangeUserRequest.class);
+                OrganisationMessage.TypeChange typeChange = payload.getTypeChange() == OrganisationChangeUserRequest.TypeChange.ADD ?
+                        OrganisationMessage.TypeChange.ADD :
+                        OrganisationMessage.TypeChange.REMOVE;
+                msg = new OrganisationMessage.ChangeUserToOrganisationMsg(requester, typeChange, event, payload.getUserId(), payload.getOrganisationId(), true);
+                actorRef = organisationEndpoint;
+                break;
             case Event.BRICK_STATE_UPDATE:
                 msg = new BrickStateEventPersistenceActor.BrickStateEventPersistenceMsg(requester, event);
                 actorRef = projectEndpoint;
@@ -158,7 +164,7 @@ public class EndpointActor extends AbstractEventEndpointActor {
             dispatch(msg, sender(), userEndpoint);
         }).match(OrganisationCreatorActor.OrganisationCreateMsg.class, msg -> {
             dispatch(msg, sender(), organisationEndpoint);
-        }).match(OrganisationMessage.AddUserToOrganisationMsg.class, msg -> {
+        }).match(OrganisationMessage.ChangeUserToOrganisationMsg.class, msg -> {
             dispatch(msg, sender(), organisationEndpoint);
         }).match(ProjectConfigurationBuilderActor.ProjectConfigurationBuildMsg.class, msg -> {
             dispatch(msg, sender(), projectEndpoint);

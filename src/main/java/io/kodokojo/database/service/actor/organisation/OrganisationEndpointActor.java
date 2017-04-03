@@ -40,8 +40,8 @@ public class OrganisationEndpointActor extends AbstractActor {
     public OrganisationEndpointActor(OrganisationRepository organisationRepository) {
 
         receive(ReceiveBuilder.match(
-                OrganisationMessage.AddUserToOrganisationMsg.class,
-                msg -> getContext().actorOf(AddUserToOrganisationActor.PROPS(organisationRepository)).forward(msg, getContext())
+                OrganisationMessage.ChangeUserToOrganisationMsg.class,
+                msg -> getContext().actorOf(ChangeUserToOrganisationActor.PROPS(organisationRepository)).forward(msg, getContext())
         ).match(
                 OrganisationCreatorActor.OrganisationCreateMsg.class,
                 msg -> getContext().actorOf(OrganisationCreatorActor.PROPS(organisationRepository)).forward(msg, getContext())

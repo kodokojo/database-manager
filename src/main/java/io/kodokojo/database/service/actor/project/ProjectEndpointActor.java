@@ -24,6 +24,7 @@ import akka.actor.SupervisorStrategy;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import io.kodokojo.commons.service.BrickFactory;
+import io.kodokojo.commons.service.repository.OrganisationRepository;
 import io.kodokojo.commons.service.repository.ProjectRepository;
 import io.kodokojo.database.service.BootstrapConfigurationProvider;
 import io.kodokojo.database.service.ConfigurationStore;
@@ -40,6 +41,7 @@ public class ProjectEndpointActor extends AbstractActor {
     private final LoggingAdapter LOGGER = getLogger(getContext().system(), this);
 
     public static Props PROPS(ProjectRepository projectRepository,
+                              OrganisationRepository organisationRepository,
                               BrickFactory brickFactory,
                               BootstrapConfigurationProvider bootstrapConfigurationProvider,
                               ConfigurationStore configurationStore) {
@@ -48,12 +50,13 @@ public class ProjectEndpointActor extends AbstractActor {
         requireNonNull(configurationStore, "configurationStoreSelector must be defined.");
         requireNonNull(bootstrapConfigurationProvider, "bootstrapConfigurationProvider must be defined.");
 
-        return Props.create(ProjectEndpointActor.class, projectRepository, brickFactory, bootstrapConfigurationProvider, configurationStore);
+        return Props.create(ProjectEndpointActor.class, projectRepository, organisationRepository, brickFactory, bootstrapConfigurationProvider, configurationStore);
     }
 
     public static final String NAME = "projectEndpointProps";
 
     public ProjectEndpointActor(ProjectRepository projectRepository,
+                                OrganisationRepository organisationRepository,
                                 BrickFactory brickFactory,
                                 BootstrapConfigurationProvider bootstrapConfigurationProvider,
                                 ConfigurationStore configurationStore) {
@@ -65,7 +68,7 @@ public class ProjectEndpointActor extends AbstractActor {
 
                 })
                 .match(ProjectConfigurationDtoCreatorActor.ProjectConfigurationDtoCreateMsg.class, msg -> {
-                    getContext().actorOf(ProjectConfigurationDtoCreatorActor.PROPS(projectRepository)).forward(msg, getContext());
+                    getContext().actorOf(ProjectConfigurationDtoCreatorActor.PROPS(projectRepository, organisationRepository)).forward(msg, getContext());
                 })
                 .match(ProjectUpdaterMessages.ProjectUpdateMsg.class, msg -> {
                     getContext().actorOf(ProjectUpdaterActor.props(projectRepository)).forward(msg, getContext());

@@ -18,13 +18,23 @@
 package io.kodokojo.database.service.actor.organisation;
 
 import io.kodokojo.commons.event.Event;
+import io.kodokojo.commons.event.payload.OrganisationChangeUserRequest;
 import io.kodokojo.commons.model.User;
 import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 
+import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 public interface OrganisationMessage {
-    class AddUserToOrganisationMsg extends EventUserRequestMessage {
+
+    enum TypeChange {
+        ADD,
+        REMOVE
+    }
+
+    class ChangeUserToOrganisationMsg extends EventUserRequestMessage {
+
+        protected final TypeChange typeChange;
 
         protected final String userId;
 
@@ -32,7 +42,7 @@ public interface OrganisationMessage {
 
         protected final boolean admin;
 
-        public AddUserToOrganisationMsg(User requester, Event request, String userId, String organisationId, boolean admin) {
+        public ChangeUserToOrganisationMsg(User requester, TypeChange typeChange, Event request, String userId, String organisationId, boolean admin) {
             super(requester, request);
             if (isBlank(userId)) {
                 throw new IllegalArgumentException("userId must be defined.");
@@ -40,6 +50,8 @@ public interface OrganisationMessage {
             if (isBlank(organisationId)) {
                 throw new IllegalArgumentException("entityId must be defined.");
             }
+            requireNonNull(typeChange, "typeChange must be defined.");
+            this.typeChange = typeChange;
             this.userId = userId;
             this.organisationId = organisationId;
             this.admin = admin;

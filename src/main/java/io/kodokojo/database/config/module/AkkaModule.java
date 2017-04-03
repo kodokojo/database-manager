@@ -55,8 +55,8 @@ public class AkkaModule extends AbstractModule {
 
     @Provides
     @Named(ProjectEndpointActor.NAME)
-    Props provideProjectEndpointProps(ProjectRepository projectRepository, BrickFactory brickFactory, BootstrapConfigurationProvider bootstrapConfigurationProvider, ConfigurationStore configurationStore) {
-        return ProjectEndpointActor.PROPS(projectRepository, brickFactory, bootstrapConfigurationProvider, configurationStore);
+    Props provideProjectEndpointProps(ProjectRepository projectRepository, OrganisationRepository organisationRepository,  BrickFactory brickFactory, BootstrapConfigurationProvider bootstrapConfigurationProvider, ConfigurationStore configurationStore) {
+        return ProjectEndpointActor.PROPS(projectRepository, organisationRepository, brickFactory, bootstrapConfigurationProvider, configurationStore);
     }
 
     @Provides

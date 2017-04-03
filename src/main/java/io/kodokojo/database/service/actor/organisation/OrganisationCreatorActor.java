@@ -66,9 +66,9 @@ public class OrganisationCreatorActor extends AbstractActor {
         } else {
             if (organisation == null) {
                 String organisationId = organisationRepository.addOrganisation(msg.organisation);
-                OrganisationMessage.AddUserToOrganisationMsg addUserToOrganisationMsg = new OrganisationMessage.AddUserToOrganisationMsg(requester, msg.originalEvent(), requester.getIdentifier(), organisationId, requester.isRoot());
-                getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(addUserToOrganisationMsg, self());
-                Future<Object> future = Patterns.ask(getContext().actorSelection(EndpointActor.ACTOR_PATH), addUserToOrganisationMsg, 1000);
+                OrganisationMessage.ChangeUserToOrganisationMsg changeUserToOrganisationMsg = new OrganisationMessage.ChangeUserToOrganisationMsg(requester, OrganisationMessage.TypeChange.ADD, msg.originalEvent(), requester.getIdentifier(), organisationId, requester.isRoot());
+                getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(changeUserToOrganisationMsg, self());
+                Future<Object> future = Patterns.ask(getContext().actorSelection(EndpointActor.ACTOR_PATH), changeUserToOrganisationMsg, 1000);
                 try {
                     Await.result(future, Duration.apply(10, TimeUnit.SECONDS));
                     sender().tell(new OrganisationCreatedResultMsg(requester, msg.originalEvent(), organisationId, false), self());

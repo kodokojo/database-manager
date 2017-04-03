@@ -25,24 +25,26 @@ import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import io.kodokojo.commons.dto.ProjectConfigurationCreationDto;
 import io.kodokojo.commons.event.Event;
+import io.kodokojo.commons.model.Organisation;
 import io.kodokojo.commons.model.ProjectConfiguration;
 import io.kodokojo.commons.model.User;
 import io.kodokojo.commons.service.actor.message.EventUserReplyMessage;
+import io.kodokojo.commons.service.repository.OrganisationRepository;
 import io.kodokojo.database.service.actor.EndpointActor;
 import io.kodokojo.commons.service.actor.message.EventUserRequestMessage;
 import io.kodokojo.commons.service.repository.ProjectRepository;
 import javaslang.control.Try;
 
 import static akka.event.Logging.getLogger;
+import static java.util.Objects.requireNonNull;
 
 public class ProjectConfigurationDtoCreatorActor extends AbstractActor {
 
     private final LoggingAdapter LOGGER = getLogger(getContext().system(), this);
 
-    public static Props PROPS(ProjectRepository projectRepository) {
-        if (projectRepository == null) {
-            throw new IllegalArgumentException("projectRepository must be defined.");
-        }
+    public static Props PROPS(ProjectRepository projectRepository, OrganisationRepository organisationRepository) {
+        requireNonNull(projectRepository, "projectRepository must be defined.");
+        requireNonNull(organisationRepository, "organisationRepository must be defined.");
         return Props.create(ProjectConfigurationDtoCreatorActor.class, projectRepository);
     }
 
@@ -50,7 +52,7 @@ public class ProjectConfigurationDtoCreatorActor extends AbstractActor {
 
     private ProjectConfigurationDtoCreateMsg initialMsg;
 
-    public ProjectConfigurationDtoCreatorActor(ProjectRepository projectRepository) {
+    public ProjectConfigurationDtoCreatorActor(ProjectRepository projectRepository, OrganisationRepository organisationRepository) {
         receive(ReceiveBuilder.match(ProjectConfigurationDtoCreateMsg.class, msg -> {
             originalSender = sender();
             initialMsg = msg;
@@ -62,7 +64,11 @@ public class ProjectConfigurationDtoCreatorActor extends AbstractActor {
             Try<ProjectConfiguration> projectConfiguration = msg.getProjectConfiguration();
             if (projectConfiguration.isSuccess()) {
                 ProjectConfiguration projectConfiguration1 = projectConfiguration.get();
+                Organisation organisation = organisationRepository.getOrganisationById(projectConfiguration1.getEntityIdentifier());
+                organisation.addProjectConfiguration(projectConfiguration1);
+                organisationRepository.addProjectConfigurationToOrganisation(projectConfiguration1.getEntityIdentifier(), projectConfiguration1.getIdentifier());
                 String projectConfigurationId = projectRepository.addProjectConfiguration(projectConfiguration1);
+
                 originalSender.tell(new ProjectConfigurationDtoCreateResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), projectConfiguration1.getEntityIdentifier(), projectConfigurationId, initialMsg.projectConfigDto.getName()), self());
             } else {
                 //originalSender.tell(new ProjectConfigurationDtoCreateFailResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), initialMsg.projectConfigDto.getName(), projectConfiguration.getCause()), self());
