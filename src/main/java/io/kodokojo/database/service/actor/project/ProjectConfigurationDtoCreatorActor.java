@@ -61,20 +61,25 @@ public class ProjectConfigurationDtoCreatorActor extends AbstractActor {
             getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(projectConfigurationBuildMsg, self());
         }).match(ProjectConfigurationBuilderActor.ProjectConfigurationBuildResultMsg.class, msg -> {
             LOGGER.debug("Receive a projectConfiguration to add to store.");
-            Try<ProjectConfiguration> projectConfiguration = msg.getProjectConfiguration();
-            if (projectConfiguration.isSuccess()) {
-                ProjectConfiguration projectConfiguration1 = projectConfiguration.get();
-                projectRepository.addProjectConfiguration(projectConfiguration1);
-                Organisation organisation = organisationRepository.getOrganisationById(projectConfiguration1.getEntityIdentifier());
-                organisation.addProjectConfiguration(projectConfiguration1);
-                organisationRepository.addProjectConfigurationToOrganisation(projectConfiguration1.getEntityIdentifier(), projectConfiguration1.getIdentifier());
-                String projectConfigurationId = projectRepository.addProjectConfiguration(projectConfiguration1);
+            Try<ProjectConfiguration> projectConfigurationOpt = msg.getProjectConfiguration();
+            if (projectConfigurationOpt.isSuccess()) {
 
-                originalSender.tell(new ProjectConfigurationDtoCreateResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), projectConfiguration1.getEntityIdentifier(), projectConfigurationId, initialMsg.projectConfigDto.getName()), self());
+                ProjectConfiguration projectConfiguration = projectConfigurationOpt.get();
+                String projectConfigurationId = projectRepository.addProjectConfiguration(projectConfiguration);
+
+                Organisation organisation = organisationRepository.getOrganisationById(projectConfiguration.getEntityIdentifier());
+                organisation.addProjectConfiguration(projectConfiguration);
+
+                organisationRepository.addProjectConfigurationToOrganisation(projectConfiguration.getEntityIdentifier(), projectConfigurationId);
+
+                originalSender.tell(new ProjectConfigurationDtoCreateResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), projectConfiguration.getEntityIdentifier(), projectConfigurationId, initialMsg.projectConfigDto.getName()), self());
+
             } else {
+
                 //originalSender.tell(new ProjectConfigurationDtoCreateFailResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), initialMsg.projectConfigDto.getName(), projectConfiguration.getCause()), self());
                 LOGGER.error("Unable to create project {} , sending failed reason to original sender.", initialMsg.projectConfigDto.getName() );
-                originalSender.tell(Futures.failed(projectConfiguration.getCause()), self());
+                originalSender.tell(Futures.failed(projectConfigurationOpt.getCause()), self());
+
             }
             getContext().stop(self());
         }).matchAny(this::unhandled).build());
