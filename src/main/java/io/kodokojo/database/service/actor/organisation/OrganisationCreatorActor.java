@@ -62,7 +62,7 @@ public class OrganisationCreatorActor extends AbstractActor {
         Organisation organisation = organisationRepository.getOrganisationByName(msg.organisation.getName());
         User requester = msg.getRequester();
         if (requester == null) {
-            LOGGER.error("Trying to create organisation {} from unknown requester.", organisation.getName());
+            LOGGER.error("Trying to create organisation {} from unknown requester.", msg.organisation.getName());
         } else {
             if (organisation == null) {
                 String organisationId = organisationRepository.addOrganisation(msg.organisation);
