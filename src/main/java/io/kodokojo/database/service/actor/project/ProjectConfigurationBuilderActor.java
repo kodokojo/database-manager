@@ -35,6 +35,7 @@ import io.kodokojo.database.service.actor.user.UserServiceCreatorActor;
 import io.kodokojo.database.service.actor.user.UserServiceFetcherActor;
 import javaslang.control.Try;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 
 import static akka.event.Logging.getLogger;
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang.StringUtils.isBlank;
 
 public class ProjectConfigurationBuilderActor extends AbstractActor {
 
@@ -182,6 +184,10 @@ public class ProjectConfigurationBuilderActor extends AbstractActor {
 
 
             String organisationIdentifier = initialMsg.projectConfigurationCreationDto.getOrganisationIdentifier();
+            if (isBlank(organisationIdentifier)) {
+                LOGGER.warning("Unable to find an Organisation identifier in event payload, use first organisation id of requester.");
+                organisationIdentifier = requester.getOrganisationIds().iterator().next();
+            }
             ProjectConfiguration projectConfiguration = new ProjectConfiguration(organisationIdentifier, projectConfigurationCreationDto.getName(), userService, new ArrayList<>(admins), stackConfiguration, new ArrayList<>(users));
             originalSender.tell(new ProjectConfigurationBuildResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), projectConfiguration), self());
             if (LOGGER.isDebugEnabled()) {

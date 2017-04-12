@@ -83,7 +83,7 @@ public class UserCreatorActor extends AbstractActor {
         this.applicationConfig = applicationConfig;
         addUserToOrganisation = false;
         receive(ReceiveBuilder.match(EventUserCreateMsg.class, this::onCreateUserRequest)
-                .match(OrganisationCreatorActor.OrganisationCreatedResultMsg.class, this::onEntityCreated)
+                .match(OrganisationCreatorActor.OrganisationCreatedResultMsg.class, this::onOrganisationCreated)
                 .match(UserEligibleActor.UserEligibleResultMsg.class, this::onUserIsEligible)
                 .match(UserGenerateSecurityData.UserSecurityDataMsg.class, this::onSecurityDataGenerated)
                 .build()
@@ -104,7 +104,7 @@ public class UserCreatorActor extends AbstractActor {
         } else {
             getContext().actorOf(UserGenerateSecurityData.PROPS()).tell(new UserGenerateSecurityData.GenerateSecurityMsg(), self());
             getContext().actorOf(UserEligibleActor.PROPS(userRepository)).tell(u, self());
-            if (StringUtils.isBlank(u.entityId)) {
+            if (organisationCreationRequired()) {
                 Organisation organisation = new Organisation(u.email);
                 getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationCreatorActor.OrganisationCreateMsg(u.getRequester(), u.originalEvent(), organisation, false), self());
 
@@ -112,6 +112,10 @@ public class UserCreatorActor extends AbstractActor {
                 organisationId = u.entityId;
             }
         }
+    }
+
+    private boolean organisationCreationRequired() {
+        return isBlank(message.entityId);
     }
 
     private void onSecurityDataGenerated(UserGenerateSecurityData.UserSecurityDataMsg msg) {
@@ -130,9 +134,8 @@ public class UserCreatorActor extends AbstractActor {
         }
     }
 
-    private void onEntityCreated(OrganisationCreatorActor.OrganisationCreatedResultMsg msg) {
+    private void onOrganisationCreated(OrganisationCreatorActor.OrganisationCreatedResultMsg msg) {
         organisationId = msg.getOrganisationId();
-        getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationMessage.ChangeUserToOrganisationMsg(null, OrganisationMessage.TypeChange.ADD, message.originalEvent(), message.id, organisationId, true), self());
         isReadyToStore();
     }
 
@@ -141,7 +144,12 @@ public class UserCreatorActor extends AbstractActor {
             String encodePublicKey = RSAUtils.encodePublicKey((RSAPublicKey) keyPair.getPublic(), message.email);
             User user = new User(message.id, organisationId, message.username, message.username, message.email, password, encodePublicKey, message.isRoot);
             boolean added = userRepository.addUser(user);
-            getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationMessage.ChangeUserToOrganisationMsg(message.getRequester(), OrganisationMessage.TypeChange.ADD, message.originalEvent(), message.id, organisationId, message.isRoot), self());
+            getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationMessage.ChangeUserToOrganisationMsg(null, OrganisationMessage.TypeChange.ADD, message.originalEvent(), message.id, organisationId, organisationCreationRequired()), self());
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Adding user {} to organisation ", message.username, organisationId);
+            }
+
+            //getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new OrganisationMessage.ChangeUserToOrganisationMsg(message.getRequester(), OrganisationMessage.TypeChange.ADD, message.originalEvent(), message.id, organisationId, message.isRoot), self());
             if (added) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("User {} successfully created.", message.getUsername());

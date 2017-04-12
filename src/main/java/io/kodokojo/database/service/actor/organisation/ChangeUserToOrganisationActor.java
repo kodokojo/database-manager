@@ -19,12 +19,16 @@ package io.kodokojo.database.service.actor.organisation;
 
 import akka.actor.AbstractActor;
 import akka.actor.Props;
+import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import io.kodokojo.commons.service.repository.OrganisationRepository;
 
+import static akka.event.Logging.getLogger;
 import static java.util.Objects.requireNonNull;
 
 public class ChangeUserToOrganisationActor extends AbstractActor {
+
+    private final LoggingAdapter LOGGER = getLogger(getContext().system(), this);
 
     private final OrganisationRepository organisationRepository;
 
@@ -37,12 +41,15 @@ public class ChangeUserToOrganisationActor extends AbstractActor {
         this.organisationRepository = organisationRepository;
 
         receive(ReceiveBuilder
-                .match(OrganisationMessage.ChangeUserToOrganisationMsg.class, this::onAddUserToEntityMesg)
+                .match(OrganisationMessage.ChangeUserToOrganisationMsg.class, this::onAddUserToOrganisationMsg)
                 .matchAny(this::unhandled)
                 .build());
     }
 
-    private void onAddUserToEntityMesg(OrganisationMessage.ChangeUserToOrganisationMsg msg) {
+    private void onAddUserToOrganisationMsg(OrganisationMessage.ChangeUserToOrganisationMsg msg) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Change organisation {} action: {} on user {} admin:{}", msg.organisationId, msg.typeChange, msg.userId, msg.admin);
+        }
         switch (msg.typeChange) {
             case ADD:
                 if (msg.admin) {

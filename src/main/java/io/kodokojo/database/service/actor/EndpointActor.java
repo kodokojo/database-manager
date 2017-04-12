@@ -97,7 +97,6 @@ public class EndpointActor extends AbstractEventEndpointActor {
                 msg = new ProjectConfigurationDtoCreatorActor.ProjectConfigurationDtoCreateMsg(requester, event, projectConfigurationCreationDto, true);
                 actorRef = projectEndpoint;
                 break;
-
             case Event.PROJECT_CREATION_REQUEST:
                 Project project = event.getPayload(Project.class);
                 msg = new ProjectCreatorActor.ProjectCreateMsg(requester, event, project, project.getProjectConfigurationIdentifier(), true);
@@ -193,8 +192,6 @@ public class EndpointActor extends AbstractEventEndpointActor {
             dispatch(msg, sender(), projectEndpoint);
         }).match(ProjectUpdaterMessages.ListAndUpdateUserToProjectMsg.class, msg -> {
             dispatch(msg, sender(), projectEndpoint);
-        }).match(BrickUpdateUserMsg.class, msg -> {
-            dispatch(msg, sender(), projectEndpoint);
         });
 
     }
@@ -207,10 +204,11 @@ public class EndpointActor extends AbstractEventEndpointActor {
                 User user = createResultMsg.getUser();
                 EventBuilder eventBuilder = eventBuilderFactory.create()
                         .setEventType(Event.USER_CREATION_EVENT)
-                        .copyCustomHeader(msg.originalEvent(), Event.REQUESTER_ID_CUSTOM_HEADER)
                         .addCustomHeader(Event.ORGANISATION_ID_CUSTOM_HEADER, user.getOrganisationIds().iterator().next())
                         .setPayload(new UserCreated(user.getIdentifier(), user.getUsername(), user.getEmail()));
-
+                if (msg.originalEvent().getCustom().containsKey(Event.REQUESTER_ID_CUSTOM_HEADER)) {
+                        eventBuilder.copyCustomHeader(msg.originalEvent(), Event.REQUESTER_ID_CUSTOM_HEADER);
+                }
                 eventBus.send(eventBuilder.build());
             } else if (msg instanceof ProjectConfigurationDtoCreatorActor.ProjectConfigurationDtoCreateResultMsg) {
                 ProjectConfigurationDtoCreatorActor.ProjectConfigurationDtoCreateResultMsg createResultMsg = (ProjectConfigurationDtoCreatorActor.ProjectConfigurationDtoCreateResultMsg) msg;

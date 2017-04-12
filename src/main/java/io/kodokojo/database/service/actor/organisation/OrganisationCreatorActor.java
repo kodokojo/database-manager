@@ -63,22 +63,30 @@ public class OrganisationCreatorActor extends AbstractActor {
         User requester = msg.getRequester();
         if (requester == null) {
             LOGGER.error("Trying to create organisation {} from unknown requester.", msg.organisation.getName());
-        } else {
-            if (organisation == null) {
-                String organisationId = organisationRepository.addOrganisation(msg.organisation);
-                OrganisationMessage.ChangeUserToOrganisationMsg changeUserToOrganisationMsg = new OrganisationMessage.ChangeUserToOrganisationMsg(requester, OrganisationMessage.TypeChange.ADD, msg.originalEvent(), requester.getIdentifier(), organisationId, requester.isRoot());
-                getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(changeUserToOrganisationMsg, self());
+        }
+        if (organisation == null) {
+
+            String organisationId = organisationRepository.addOrganisation(msg.organisation);
+            LOGGER.debug("Organisation {} added with id {}.");
+            OrganisationCreatedResultMsg resultMsg = new OrganisationCreatedResultMsg(requester, msg.originalEvent(), organisationId, false);
+            if (requester == null) {
+                LOGGER.warning("Organisation {} will not contain users.", msg.organisation.getName());
+                sender().tell(resultMsg, self());
+            } else {
+                OrganisationMessage.ChangeUserToOrganisationMsg changeUserToOrganisationMsg = new OrganisationMessage.ChangeUserToOrganisationMsg(requester, OrganisationMessage.TypeChange.ADD, msg.originalEvent(), requester.getIdentifier(), organisationId, true);
+                //getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(changeUserToOrganisationMsg, self());
                 Future<Object> future = Patterns.ask(getContext().actorSelection(EndpointActor.ACTOR_PATH), changeUserToOrganisationMsg, 1000);
                 try {
                     Await.result(future, Duration.apply(10, TimeUnit.SECONDS));
-                    sender().tell(new OrganisationCreatedResultMsg(requester, msg.originalEvent(), organisationId, false), self());
+                    sender().tell(resultMsg, self());
                 } catch (Exception e) {
                     LOGGER.error("Unable to add user {} to organisation {}.", requester.getUsername(), msg.organisation.getName());
                 }
-            } else {
-                sender().tell(new OrganisationCreatedResultMsg(requester, msg.originalEvent(), organisation.getIdentifier(), true), self());
             }
+        } else {
+            sender().tell(new OrganisationCreatedResultMsg(requester, msg.originalEvent(), organisation.getIdentifier(), true), self());
         }
+
         getContext().stop(self());
     }
 

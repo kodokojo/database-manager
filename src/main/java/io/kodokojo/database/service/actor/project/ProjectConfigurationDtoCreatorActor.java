@@ -66,13 +66,14 @@ public class ProjectConfigurationDtoCreatorActor extends AbstractActor {
 
                 ProjectConfiguration projectConfiguration = projectConfigurationOpt.get();
                 String projectConfigurationId = projectRepository.addProjectConfiguration(projectConfiguration);
+                String organisationIdentifier = projectConfiguration.getEntityIdentifier();
 
-                Organisation organisation = organisationRepository.getOrganisationById(projectConfiguration.getEntityIdentifier());
+                Organisation organisation = organisationRepository.getOrganisationById(organisationIdentifier);
                 organisation.addProjectConfiguration(projectConfiguration);
 
-                organisationRepository.addProjectConfigurationToOrganisation(projectConfiguration.getEntityIdentifier(), projectConfigurationId);
+                organisationRepository.addProjectConfigurationToOrganisation(organisationIdentifier, projectConfigurationId);
 
-                originalSender.tell(new ProjectConfigurationDtoCreateResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), projectConfiguration.getEntityIdentifier(), projectConfigurationId, initialMsg.projectConfigDto.getName()), self());
+                originalSender.tell(new ProjectConfigurationDtoCreateResultMsg(initialMsg.getRequester(), initialMsg.originalEvent(), organisationIdentifier, projectConfigurationId, initialMsg.projectConfigDto.getName()), self());
 
             } else {
 

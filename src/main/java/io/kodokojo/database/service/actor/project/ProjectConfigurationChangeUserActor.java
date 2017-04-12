@@ -56,49 +56,17 @@ public class ProjectConfigurationChangeUserActor extends AbstractActor {
     private ProjectConfigurationChangeEventUserMsg originalMsg;
 
     public static Props PROPS(ProjectFetcher projectFetcher) {
-        if (projectFetcher == null) {
-            throw new IllegalArgumentException("projectFetcher must be defined.");
-        }
+        requireNonNull(projectFetcher, "projectFetcher must be defined.");
         return Props.create(ProjectConfigurationChangeUserActor.class, projectFetcher);
     }
 
     public ProjectConfigurationChangeUserActor(ProjectFetcher projectFetcher) {
-        receive(ReceiveBuilder.match(ProjectConfigurationChangeEventUserMsg.class, msg -> {
-            this.originalMsg = msg;
-            this.originalSender = sender();
-            users = new HashSet<>();
-            projectConfiguration = projectFetcher.getProjectConfigurationById(originalMsg.projectConfigurationId);
-            if (projectConfiguration == null) {
-                LOGGER.error("Unable to found an existing ProjectConfiguration with Identifiant = '{}'.", msg.projectConfigurationId);
-            } else {
-                msg.userIdentifiers.stream().forEach(userId -> {
-                    getContext().actorFor(EndpointActor.ACTOR_PATH).tell(new UserFetcherActor.UserFetchMsg(msg.getRequester(), msg.originalEvent(),  userId), self());
-                });
-            }
-        })
-                .match(UserFetcherActor.UserFetchResultMsg.class, msg -> {
-                    users = msg.getUsers();
-                    if (CollectionUtils.isEmpty(users)) {
-                        LOGGER.error("Unable to found a valid user with IDs '{}'.", StringUtils.join(msg.getUserIdRequeted(), ", "));
-                    } else {
-                        ProjectConfigurationBuilder builder = new ProjectConfigurationBuilder(projectConfiguration);
-                        List<User> existingUsers = IteratorUtils.toList(projectConfiguration.getUsers());
-                        List<String> userNames = users.stream().map(User::getUsername).collect(Collectors.toList());
-                        switch (originalMsg.typeChange) {
-                            case ADD:
-                                existingUsers.addAll(users);
-                                LOGGER.debug("Adding {} to projectConfiguration '{}'.", StringUtils.join(userNames, ","), projectConfiguration.getName());
-                                break;
-                            case REMOVE:
-                                existingUsers.removeAll(users);
-                                LOGGER.debug("Remove {} to projectConfiguration '{}'.", StringUtils.join(userNames, ","), projectConfiguration.getName());
-                                break;
-                        }
-                        builder.setUsers(existingUsers);
-                        getContext().actorFor(EndpointActor.ACTOR_PATH).tell(new ProjectConfigurationUpdaterActor.ProjectConfigurationUpdaterMsg(originalMsg.getRequester(), originalMsg.originalEvent(),  builder.build()), self());
-                    }
-                })
+        users = new HashSet<>();
+        receive(ReceiveBuilder.match(ProjectConfigurationChangeEventUserMsg.class, msg -> receiveRequest(projectFetcher, msg))
+                .match(UserFetcherActor.UserFetchResultMsg.class, this::receiveUser)
                 .match(ProjectConfigurationUpdaterActor.ProjectConfigurationUpdaterResultMsg.class, msg -> {
+                    //  Following jobs must be done in brick manager.
+                    /*
                     projectConfiguration = msg.getProjectConfiguration();
                     Project project = projectFetcher.getProjectByProjectConfigurationId(projectConfiguration.getIdentifier());
                     if (project == null) {
@@ -124,10 +92,50 @@ public class ProjectConfigurationChangeUserActor extends AbstractActor {
                             });
                         });
                         getContext().stop(self());
-                        LOGGER.debug("Request add user {} on project {} for {} bricks.", StringUtils.join(users.stream().map(User::getUsername).collect(Collectors.toList()), ", "), projectConfiguration.getName());
+                        LOGGER.debug("Request add user {} on project {} for {} bricks.", StringUtils.join(users.stream().map(User::getUsername).collect(Collectors.toList()), ", "), projectConfiguration.getName(), projectConfiguration.getDefaultBrickConfigurations());
                     }
+                    */
+                    originalSender.tell(new ProjectConfigurationChangeUserResultMsg(msg.getRequester(), msg.originalEvent(), true), self());
+                    getContext().stop(self());
                 })
                 .matchAny(this::unhandled).build());
+    }
+
+    private void receiveUser(UserFetcherActor.UserFetchResultMsg msg) {
+        users = msg.getUsers();
+        if (CollectionUtils.isEmpty(users)) {
+            LOGGER.error("Unable to found a valid user with IDs '{}'.", StringUtils.join(msg.getUserIdRequeted(), ", "));
+        } else {
+            ProjectConfigurationBuilder builder = new ProjectConfigurationBuilder(projectConfiguration);
+            List<User> existingUsers = IteratorUtils.toList(projectConfiguration.getUsers());
+            List<String> userNames = users.stream().map(User::getUsername).collect(Collectors.toList());
+            switch (originalMsg.typeChange) {
+                case ADD:
+                    existingUsers.addAll(users);
+                    LOGGER.debug("Adding {} to projectConfiguration '{}'.", StringUtils.join(userNames, ","), projectConfiguration.getName());
+                    break;
+                case REMOVE:
+                    existingUsers.removeAll(users);
+                    LOGGER.debug("Remove {} to projectConfiguration '{}'.", StringUtils.join(userNames, ","), projectConfiguration.getName());
+                    break;
+            }
+            builder.setUsers(existingUsers);
+            ProjectConfigurationUpdaterActor.ProjectConfigurationUpdaterMsg projectConfigurationUpdaterMsg = new ProjectConfigurationUpdaterActor.ProjectConfigurationUpdaterMsg(originalMsg.getRequester(), originalMsg.originalEvent(), builder.build());
+            getContext().actorFor(EndpointActor.ACTOR_PATH).tell(projectConfigurationUpdaterMsg, self());
+        }
+    }
+
+    private void receiveRequest(ProjectFetcher projectFetcher, ProjectConfigurationChangeEventUserMsg msg) {
+        this.originalMsg = msg;
+        this.originalSender = sender();
+        projectConfiguration = projectFetcher.getProjectConfigurationById(originalMsg.projectConfigurationId);
+        if (projectConfiguration == null) {
+            LOGGER.error("Unable to found an existing ProjectConfiguration with Identifiant = '{}'.", msg.projectConfigurationId);
+        } else {
+            msg.userIdentifiers.stream().forEach(userId -> {
+                getContext().actorFor(EndpointActor.ACTOR_PATH).tell(new UserFetcherActor.UserFetchMsg(msg.getRequester(), msg.originalEvent(),  userId), self());
+            });
+        }
     }
 
 
