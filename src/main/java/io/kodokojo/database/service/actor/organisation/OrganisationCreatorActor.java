@@ -59,15 +59,15 @@ public class OrganisationCreatorActor extends AbstractActor {
     }
 
     private void onOrganisationCreateMsg(OrganisationCreateMsg msg) {
-        Organisation organisation = organisationRepository.getOrganisationByName(msg.organisation.getName());
         User requester = msg.getRequester();
         if (requester == null) {
             LOGGER.error("Trying to create organisation {} from unknown requester.", msg.organisation.getName());
         }
+        Organisation organisation = organisationRepository.getOrganisationByName(msg.organisation.getName());
         if (organisation == null) {
 
             String organisationId = organisationRepository.addOrganisation(msg.organisation);
-            LOGGER.debug("Organisation {} added with id {}.");
+            LOGGER.debug("Organisation {} added with id {}.", msg.organisation.getName(), organisationId);
             OrganisationCreatedResultMsg resultMsg = new OrganisationCreatedResultMsg(requester, msg.originalEvent(), organisationId, false);
             if (requester == null) {
                 LOGGER.warning("Organisation {} will not contain users.", msg.organisation.getName());
@@ -84,6 +84,9 @@ public class OrganisationCreatorActor extends AbstractActor {
                 }
             }
         } else {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Organisation '{}' already exist.", msg.organisation.getName());
+            }
             sender().tell(new OrganisationCreatedResultMsg(requester, msg.originalEvent(), organisation.getIdentifier(), true), self());
         }
 

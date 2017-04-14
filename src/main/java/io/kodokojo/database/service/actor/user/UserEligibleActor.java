@@ -1,17 +1,17 @@
 /**
  * Kodo Kojo - Microservice which allow to access to Database.
  * Copyright © 2017 Kodo Kojo (infos@kodokojo.io)
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -46,7 +46,7 @@ public class UserEligibleActor extends AbstractActor {
             boolean identifierExpected = userRepository.identifierExpectedNewUser(id);
             boolean alreadyExist = false;
             if (identifierExpected) {
-                alreadyExist = userRepository.getUserByUsername(username) != null;
+                alreadyExist = userRepository.usernameAlreadyExist(username);
             }
             UserEligibleResultMsg resultMsg = new UserEligibleResultMsg(alreadyExist, identifierExpected, true);
             if (LOGGER.isDebugEnabled()) {
@@ -55,12 +55,10 @@ public class UserEligibleActor extends AbstractActor {
             sender().tell(resultMsg, self());
             getContext().stop(self());
         }).match(UserEligibleMsg.class, msg -> {
-            boolean res = userRepository.getUserServiceByName(msg.username) == null;
-            sender().tell(new UserEligibleResultMsg(res, true, true), self());
+            boolean usernameAlreadyExist = userRepository.usernameAlreadyExist(msg.username);
+            sender().tell(new UserEligibleResultMsg(usernameAlreadyExist, true, true), self());
             getContext().stop(self());
-        })
-                .matchAny(this::unhandled).build());
-
+        }).matchAny(this::unhandled).build());
     }
 
     public static class UserEligibleMsg {
@@ -89,7 +87,7 @@ public class UserEligibleActor extends AbstractActor {
         }
 
         public boolean isValid() {
-            return idExpected && userNameValid;
+            return !alreadyExist && idExpected && userNameValid;
         }
 
         public boolean isAlreadyExist() {

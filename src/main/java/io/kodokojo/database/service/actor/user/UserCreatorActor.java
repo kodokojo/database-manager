@@ -110,6 +110,9 @@ public class UserCreatorActor extends AbstractActor {
 
             } else {
                 organisationId = u.entityId;
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("User '{}' attached to organisation which already exist with id {}.", u.getUsername(), u.getEntityId());
+                }
             }
         }
     }
@@ -136,6 +139,7 @@ public class UserCreatorActor extends AbstractActor {
 
     private void onOrganisationCreated(OrganisationCreatorActor.OrganisationCreatedResultMsg msg) {
         organisationId = msg.getOrganisationId();
+
         isReadyToStore();
     }
 
